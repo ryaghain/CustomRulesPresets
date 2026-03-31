@@ -1,5 +1,8 @@
 ﻿using BepInEx;
+using BepInEx.Bootstrap;
 using BepInEx.Logging;
+using HarmonyLib;
+using CustomRulesPresets.Core;
 
 namespace CustomRulesPresets {
     // Here are some basic resources on code style and naming conventions to help you in your first CSharp plugin!
@@ -14,17 +17,20 @@ namespace CustomRulesPresets {
 
     public partial class Plugin: BaseUnityPlugin {
         internal static ManualLogSource Log { get; private set; } = null!;
+        public static Harmony harmony = null!;
+
+        public static bool shownErrorThisSession = false;
 
         private void Awake() {
-            // BepInEx gives us a logger which we can use to log information. See https://lethal.wiki/dev/fundamentals/logging
             Log = Logger;
+            Log.LogInfo($"Plugin {Name} is loaded!");
 
-            // BepInEx also gives us a config file for easy configuration. See https://lethal.wiki/dev/intermediate/custom-configs
+            harmony = new Harmony(Id);
+            harmony.PatchAll();
+        }
 
-            // We can apply our hooks here. See https://lethal.wiki/dev/fundamentals/patching-code
-    
-           // Log our awake here so we can see it in LogOutput.log file
-           Log.LogInfo($"Plugin {Name} is loaded!");
-       }
+        public static bool IsBepInExModInstalled(string guid) {
+            return Chainloader.PluginInfos.ContainsKey(guid);
+        }
     }
 }
