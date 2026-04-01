@@ -33,4 +33,13 @@ namespace CustomRulesPresets {
             return Chainloader.PluginInfos.ContainsKey(guid);
         }
     }
+
+	[HarmonyPatch]
+	public static class Patches {
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(MatchSetupRules), nameof(MatchSetupRules.Awake))]
+		public static void HookIntoGUI(MatchSetupRules __instance) {
+			CustomRulesPresetsManager.setup(__instance);
+		}
+	}
 }
