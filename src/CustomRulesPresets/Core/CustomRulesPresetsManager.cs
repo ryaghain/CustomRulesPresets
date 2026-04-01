@@ -6,11 +6,7 @@ using Mirror;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Text;
-using UnityEngine;
-using UnityEngine.UIElements.Experimental;
-using static MatchSetupMenu;
-using static MatchSetupRules;
+
 
 namespace CustomRulesPresets.Core {
 	public static class CustomRulesPresetsManager {
@@ -45,7 +41,7 @@ namespace CustomRulesPresets.Core {
 				Plugin.Log.LogError($"Invalid preset index {preset_index} in preset_delete.");
 				return;
 			} else if (current_selected_preset_index == preset_index) {
-				Plugin.Log.LogError($"Cannot delete preset at index {preset_index} because it is currently loaded. Please load a different preset before deleting this one.");
+				Plugin.Log.LogError($"Cannot delete preset at index {preset_index} because it is currently selected. Load a different preset before deleting this one.");
 				return;
 			}
 
@@ -82,7 +78,7 @@ namespace CustomRulesPresets.Core {
 				return;
 			}
 
-			SyncDictionary<MatchSetupRules.Rule, float> current_rules_sync_dict = field_rules_value as SyncDictionary<MatchSetupRules.Rule, float>;
+			Dictionary<MatchSetupRules.Rule, float> current_rules_sync_dict = field_rules_value as Dictionary<MatchSetupRules.Rule, float>;
 			if (current_rules_sync_dict == null) {
 				Plugin.Log.LogError("Current rules from MatchSetupRules instance is not of type SyncDictionary<MatchSetupRules.Rule, float>.");
 				return;
@@ -101,14 +97,14 @@ namespace CustomRulesPresets.Core {
 				return;
 			}
 
-			SyncDictionary<ItemPoolId, float> current_spawn_chance_weights_sync_dict = field_spawn_chance_weights_value as SyncDictionary<ItemPoolId, float>;
+			Dictionary<MatchSetupRules.ItemPoolId, float> current_spawn_chance_weights_sync_dict = field_spawn_chance_weights_value as Dictionary<MatchSetupRules.ItemPoolId, float>;
 			if (current_spawn_chance_weights_sync_dict == null) {
 				Plugin.Log.LogError("Current spawn chance weights from MatchSetupRules instance is not of type SyncDictionary<ItemPoolId, float>.");
 				return;
 			}
 
 			Dictionary<MatchSetupRules.ItemPoolId, float> current_item_spawn_chance_weights = new Dictionary<MatchSetupRules.ItemPoolId, float>();
-			foreach (ItemPoolId item_pool_id in current_spawn_chance_weights_sync_dict.Keys) {
+			foreach (MatchSetupRules.ItemPoolId item_pool_id in current_spawn_chance_weights_sync_dict.Keys) {
 				current_item_spawn_chance_weights.Add(item_pool_id, current_spawn_chance_weights_sync_dict[item_pool_id]);
 			}
 			preset.item_spawn_chance_weights = current_item_spawn_chance_weights;
@@ -137,7 +133,7 @@ namespace CustomRulesPresets.Core {
 				return;
 			}
 
-			SyncDictionary<MatchSetupRules.Rule, float> new_rules = new SyncDictionary<MatchSetupRules.Rule, float>();
+			Dictionary<MatchSetupRules.Rule, float> new_rules = new Dictionary<MatchSetupRules.Rule, float>();
 			field_match_setup_rules_rules.SetValue(instance_match_setup_rules, new_rules);
 
 			foreach (MatchSetupRules.Rule rule in rules_settings.Keys) {
@@ -146,38 +142,38 @@ namespace CustomRulesPresets.Core {
 		}
 
 		// Stores the provided MatchSetupRules instance and retrieves the necessary FieldInfo and MethodInfo for later use.
-		public static void setup(MatchSetupRules new_instance_match_setup_rules) {
+		public static void setup(MatchSetupRules? new_instance_match_setup_rules) {
 			if (new_instance_match_setup_rules == null) {
 				Plugin.Log.LogError("Failed to set up CustomRulesPresetsManager: the provided instance is null.");
 				return;
 			}
 			instance_match_setup_rules = new_instance_match_setup_rules;
 
-			field_match_setup_rules_rules = typeof(MatchSetupRules).GetField(nameof(MatchSetupRules.rules), BindingFlags.NonPublic | BindingFlags.Instance);
+			field_match_setup_rules_rules = typeof(MatchSetupRules).GetField("rules", BindingFlags.NonPublic | BindingFlags.Instance);
 			if (field_match_setup_rules_rules == null) {
 				Plugin.Log.LogError("Failed to set up CustomRulesPresetsManager: could not find field 'rules' in MatchSetupRules.");
 				return;
 			}
 
-			field_match_setup_rules_spawn_chance_weights = typeof(MatchSetupRules).GetField(nameof(MatchSetupRules.spawnChanceWeights), BindingFlags.NonPublic | BindingFlags.Instance);
+			field_match_setup_rules_spawn_chance_weights = typeof(MatchSetupRules).GetField("spawnChanceWeights", BindingFlags.NonPublic | BindingFlags.Instance);
 			if (field_match_setup_rules_spawn_chance_weights == null) {
 				Plugin.Log.LogError("Failed to set up CustomRulesPresetsManager: could not find field 'spawnChanceWeights' in MatchSetupRules.");
 				return;
 			}
 
-			method_match_setup_rules_update_rule = typeof(MatchSetupRules).GetMethod(nameof(MatchSetupRules.UpdateRule), BindingFlags.NonPublic | BindingFlags.Instance);
+			method_match_setup_rules_update_rule = typeof(MatchSetupRules).GetMethod("UpdateRule", BindingFlags.NonPublic | BindingFlags.Instance);
 			if (method_match_setup_rules_update_rule == null) {
 				Plugin.Log.LogError("Failed to set up CustomRulesPresetsManager: could not find method 'UpdateRule' in MatchSetupRules.");
 				return;
 			}
 
-			method_match_setup_rules_set_spawn_chance = typeof(MatchSetupRules).GetMethod(nameof(MatchSetupRules.SetSpawnChance), BindingFlags.NonPublic | BindingFlags.Instance);
+			method_match_setup_rules_set_spawn_chance = typeof(MatchSetupRules).GetMethod("SetSpawnChance", BindingFlags.NonPublic | BindingFlags.Instance);
 			if (method_match_setup_rules_set_spawn_chance == null) {
 				Plugin.Log.LogError("Failed to set up CustomRulesPresetsManager: could not find method 'SetSpawnChance' in MatchSetupRules.");
 				return;
 			}
 
-			method_match_setup_rules_server_update_spawn_chance_value = typeof(MatchSetupRules).GetMethod(nameof(MatchSetupRules.ServerUpdateSpawnChanceValue), BindingFlags.Public | BindingFlags.Instance);
+			method_match_setup_rules_server_update_spawn_chance_value = typeof(MatchSetupRules).GetMethod("ServerUpdateSpawnChanceValue", BindingFlags.Public | BindingFlags.Instance);
 			if (method_match_setup_rules_server_update_spawn_chance_value == null) {
 				Plugin.Log.LogError("Failed to set up CustomRulesPresetsManager: could not find method 'ServerUpdateSpawnChanceValue' in MatchSetupRules.");
 				return;
