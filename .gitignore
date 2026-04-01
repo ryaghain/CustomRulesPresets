@@ -226,3 +226,6 @@ artifacts/**/*.zip
 *.txt
 artifacts/**
 Config.Build.user.props
+
+# Other
+src/CustomRulesPresets/Decompiled

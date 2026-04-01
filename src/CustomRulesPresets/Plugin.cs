@@ -3,6 +3,7 @@ using BepInEx.Bootstrap;
 using BepInEx.Logging;
 using HarmonyLib;
 using CustomRulesPresets.Core;
+using CustomRulesPresets.UI;
 
 namespace CustomRulesPresets {
     [BepInAutoPlugin]
@@ -27,6 +28,12 @@ namespace CustomRulesPresets {
 
 	[HarmonyPatch]
 	public static class Patches {
+		[HarmonyPostfix]
+		[HarmonyPatch(typeof(MenuTabs), nameof(MenuTabs.Awake))]
+		public static void HookIntoGUI(MenuTabs __instance) {
+			UIManager.Inject(__instance);
+		}
+
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(MatchSetupRules), "Awake")]
 		public static void HookIntoMatchSetupRules(MatchSetupRules __instance) {

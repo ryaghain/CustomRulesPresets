@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <!-- This is the most appropriate target framework for the game's Unity version. -->
     <TargetFramework>netstandard2.1</TargetFramework>
@@ -26,6 +26,10 @@
     <Reference Include="GameAssembly">
       <HintPath>G:\SteamLibrary\steamapps\common\Super Battle Golf\Super Battle Golf_Data\Managed\GameAssembly.dll</HintPath>
     </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Decompiled\**\*.cs" />
+	<None Include="Decompiled\**\*.cs" />
   </ItemGroup>
 
   <!--
