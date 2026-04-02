@@ -21,6 +21,23 @@
       <DeployModFiles Include="./Assets/bundle" BepInExDir="plugins/" />
     -->
   </ItemGroup>
+  <ItemGroup>
+    <Reference Include="GameAssembly">
+      <HintPath>D:\Modding\SuperBattleGolf\GameAssembly-publicized.dll</HintPath>
+    </Reference>
+    <Reference Include="SharedAssembly">
+      <HintPath>D:\Modding\SuperBattleGolf\SharedAssembly-publicized.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>D:\Modding\SuperBattleGolf\UnityEngine.UI-publicized.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>D:\Modding\SuperBattleGolf\Unity.TextMeshPro-publicized.dll</HintPath>
+    </Reference>
+    <Reference Include="Mirror">
+      <HintPath>D:\Modding\SuperBattleGolf\Mirror-publicized.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 
   <!--
     To reference mod assemblies from Thunderstore packages via NuGet,

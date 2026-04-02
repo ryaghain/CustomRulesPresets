@@ -25,9 +25,9 @@ namespace CustomRulesPresets {
 	[HarmonyPatch]
 	public static class Patches {
 		[HarmonyPostfix]
-		[HarmonyPatch(typeof(MatchSetupMenu), nameof(MatchSetupMenu.Awake))]
+		[HarmonyPatch(typeof(MatchSetupMenu), nameof(MatchSetupMenu.OnStartClient))]
 		public static void hook(MatchSetupMenu __instance) {
-            Plugin.Log.LogDebug("MatchSetupMenu.Awake postfix hook called, setting up UIManager...");
+            Plugin.Log.LogDebug("MatchSetupMenu.OnStartClient postfix hook called, setting up UIManager...");
 			int setup_error_code = UIManager.setup(__instance);
             Plugin.Log.LogDebug($"UIManager exited setup with code: {setup_error_code}");
 		}
