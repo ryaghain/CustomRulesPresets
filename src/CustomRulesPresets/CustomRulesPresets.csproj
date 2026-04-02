@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <!-- This is the most appropriate target framework for the game's Unity version. -->
     <TargetFramework>netstandard2.1</TargetFramework>
@@ -8,7 +8,6 @@
     <AssemblyTitle>CustomRulesPresets</AssemblyTitle>
     <!-- This is the version number of your mod. -->
     <Version>0.1.0</Version>
-	<!-- <AllowUnsafeBlocks>True</AllowUnsafeBlocks> -->
   </PropertyGroup>
 
   <!-- Mod files to copy to the relative BepInEx directory after build -->
@@ -21,15 +20,6 @@
 
       <DeployModFiles Include="./Assets/bundle" BepInExDir="plugins/" />
     -->
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="GameAssembly">
-      <HintPath>G:\SteamLibrary\steamapps\common\Super Battle Golf\Super Battle Golf_Data\Managed\GameAssembly.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Remove="Decompiled\**\*.cs" />
-	<None Include="Decompiled\**\*.cs" />
   </ItemGroup>
 
   <!--

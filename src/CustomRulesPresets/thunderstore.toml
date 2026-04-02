@@ -7,8 +7,8 @@ repository = "https://thunderstore.io"
 [package]
 namespace = "ryaghain"
 name = "CustomRulesPresets"
-description = "TODO: Fill in short mod description."
-websiteUrl = "" # TODO: Add a link to your mod repository here (optional)
+description = "Adds the ability to create, save, and load custom rules presets."
+websiteUrl = "https://github.com/ryaghain/CustomRulesPresets"
 containsNsfwContent = false
 
 [package.dependencies]
