@@ -157,7 +157,14 @@ namespace CustomRulesPresets.UI {
 			string selectedText = dropdown.options[selected_index].text;
 
 			if (selectedText != NEW_PRESET_OPTION_TEXT) {
-				CustomRulesPresetsManager.preset_load_settings(selected_index);
+				Error load_error = CustomRulesPresetsManager.preset_load_settings(selected_index);
+				if (load_error != Error.Success) {
+					Plugin.Log.LogError($"Failed to load preset at index {selected_index}. Restoring previous dropdown selection...");
+					dropdown.SetValueWithoutNotify(current_selected_preset_index);
+					dropdown.RefreshShownValue();
+					return;
+				}
+
 				current_selected_preset_index = selected_index;
 				return;
 			}
@@ -178,10 +185,10 @@ namespace CustomRulesPresets.UI {
 			Plugin.Log.LogDebug("UIManager has been reset.");
 		}
 
-		public static int setup(MatchSetupMenu new_instance_match_setup_menu) {
+		public static Error setup(MatchSetupMenu new_instance_match_setup_menu) {
 			if (new_instance_match_setup_menu == null) {
 				Plugin.Log.LogError("UIManager is not set up properly.");
-				return 1;
+				return Error.GenericFailure;
 			}
 			instance_match_setup_menu = new_instance_match_setup_menu;
 			if (instance_match_setup_menu.isServer) {
@@ -193,10 +200,10 @@ namespace CustomRulesPresets.UI {
 			}
 
 			Plugin.Log.LogDebug("Setting up CustomRulesPresetsManager...");
-			int setup_error_code = CustomRulesPresetsManager.setup(instance_match_setup_menu.rules);
-			Plugin.Log.LogDebug($"CustomRulesPresetsManager exted setup with code: {setup_error_code}");
+			Error setup_error_code = CustomRulesPresetsManager.setup(instance_match_setup_menu.rules);
+			Plugin.Log.LogDebug($"CustomRulesPresetsManager exted setup with code: {setup_error_code.ToString()}");
 
-			return 0;
+			return Error.Success;
 		}
 	}
 }

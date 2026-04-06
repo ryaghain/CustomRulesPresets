@@ -13,6 +13,15 @@ TODO:
 */
 
 namespace CustomRulesPresets {
+    public enum Error {
+        Success = 0,
+        GenericFailure = 1,
+        ArgumentNull = 2,
+        ArgumentOutOfRange = 3,
+        LocalVariableIsNull = 4,
+        GlobalVariableIsNull = 5,
+    }
+
     [BepInAutoPlugin]
     [BepInProcess("Super Battle Golf.exe")]
     public partial class Plugin: BaseUnityPlugin {
@@ -36,8 +45,8 @@ namespace CustomRulesPresets {
 		[HarmonyPatch(typeof(MatchSetupMenu), nameof(MatchSetupMenu.OnStartClient))]
 		public static void hook(MatchSetupMenu __instance) {
             Plugin.Log.LogDebug("MatchSetupMenu.OnStartClient postfix hook called, setting up UIManager...");
-			int setup_error_code = UIManager.setup(__instance);
-            Plugin.Log.LogDebug($"UIManager exited setup with code: {setup_error_code}");
+			Error setup_error_code = UIManager.setup(__instance);
+            Plugin.Log.LogDebug($"UIManager exited setup with code: {setup_error_code.ToString()}");
 		}
 
         [HarmonyPostfix]
