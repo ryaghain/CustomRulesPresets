@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using UnityEngine.Assertions;
 using static MatchSetupRules;
 
 namespace CustomRulesPresets.Core {
@@ -39,11 +40,16 @@ namespace CustomRulesPresets.Core {
 			if (preset_index < 0 || preset_index >= custom_rules_presets.Count) {
 				Plugin.Log.LogError($"Invalid preset index {preset_index} in preset_load_settings.");
 				return;
+			} else if (preset_index == current_selected_preset_index) {
+				Plugin.Log.LogInfo($"Preset at index {preset_index} is already selected, skipping load.");
+				return;
 			}
+
 			CustomRulesPreset preset = custom_rules_presets[preset_index];
 			set_rules(preset.rules_settings);
 			set_item_spawn_chance_weights(preset.item_spawn_chance_weights);
 			current_selected_preset_index = preset_index;
+			Plugin.Log.LogInfo($"Loaded preset {preset_index} successfully.");
 		}
 
 		// Saves the current settings from the MatchSetupRules instance into the preset at the provided index.
@@ -107,7 +113,12 @@ namespace CustomRulesPresets.Core {
 				Plugin.Log.LogError("Failed to set up CustomRulesPresetsManager: the provided instance is null.");
 				return 1;
 			}
+
 			instance_match_setup_rules = new_instance_match_setup_rules;
+			if (custom_rules_presets.Count == 0) {
+				preset_create();
+			}
+
 			Plugin.Log.LogDebug("CustomRulesPresetsManager setup done.");
 			return 0;
 		}

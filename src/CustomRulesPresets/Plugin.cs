@@ -4,6 +4,14 @@ using BepInEx.Logging;
 using HarmonyLib;
 using CustomRulesPresets.UI;
 
+/* 
+TODO:
+- Add a config file manager
+- fix the new dropdown stretching
+- fix the new dropdown outline
+- add a debug bool to the eventual config file to toggle debug logging so others can get debug info if they want
+*/
+
 namespace CustomRulesPresets {
     [BepInAutoPlugin]
     [BepInProcess("Super Battle Golf.exe")]

@@ -10,26 +10,29 @@ using UnityEngine.Localization.Components;
 
 namespace CustomRulesPresets.UI {
 	public static class UIManager {
+		const string NEW_PRESET_OPTION_TEXT = "New Preset";
+
 		public static MatchSetupMenu instance_match_setup_menu = null!;
 		public static GameObject presets_options = null!;
-		public static UnityEngine.Events.UnityAction on_presets_tab_click = null!;
+		public static int current_selected_preset_index = -1;
 
-		[Serializable]
-		public class PresetData {
-			public string name_text = "Preset ";
-			public Action<string> on_name_text_changed = null!;
-			public Action on_save_icon_click = null!;
-			public Action on_load_icon_click = null!;
-			public Action on_delete_icon_click = null!;
-		}
-		public static List<PresetData> preset_entries = new List<PresetData>();
+
+		//[Serializable]
+		//public class PresetData {
+		//	public string name_text = "Preset ";
+		//	public Action<string> on_name_text_changed = null!;
+		//	public Action on_save_icon_click = null!;
+		//	public Action on_load_icon_click = null!;
+		//	public Action on_delete_icon_click = null!;
+		//}
+		//public static List<PresetData> preset_entries = new List<PresetData>();
 
 		public static GameObject InsertDropdownAboveItemProbabilities(GameObject matchSetupMenu, string leftLabel, string firstOptionText) {
 			// Source widget to clone
 			Transform source = matchSetupMenu.transform.Find("Menu/Background/Match Setup/Columns/Mode/Dropdown Option Variant");
 
 			if (source == null) {
-				Debug.LogError("Source dropdown option not found.");
+				Plugin.Log.LogError("Source dropdown option not found.");
 				return null!;
 			}
 
@@ -37,14 +40,14 @@ namespace CustomRulesPresets.UI {
 			Transform content = matchSetupMenu.transform.Find("Menu/Background/Rules/Rules/Scroll View/Viewport/Content");
 
 			if (content == null) {
-				Debug.LogError("Rules content container not found.");
+				Plugin.Log.LogError("Rules content container not found.");
 				return null!;
 			}
 
 			// Anchor object we want to insert before
 			Transform itemProbabilities = content.Find("Item probabilities");
 			if (itemProbabilities == null) {
-				Debug.LogError("'Item probabilities' section not found.");
+				Plugin.Log.LogError("'Item probabilities' section not found.");
 				return null!;
 			}
 
@@ -73,11 +76,19 @@ namespace CustomRulesPresets.UI {
 			// Configure dropdown options
 			TMP_Dropdown dropdown = clone.transform.Find("Option Contents/Dropdown")?.GetComponent<TMP_Dropdown>()!;
 			if (dropdown != null) {
+				// This custom component is a common reason the list gets rebuilt.
+				var localizeDropdown = dropdown.GetComponent("LocalizeDropdown");
+				if (localizeDropdown != null)
+					GameObject.Destroy(localizeDropdown);
+
 				dropdown.options.Clear();
 				dropdown.options.Add(new TMP_Dropdown.OptionData(firstOptionText));
-				dropdown.options.Add(new TMP_Dropdown.OptionData("New"));
+				dropdown.options.Add(new TMP_Dropdown.OptionData(NEW_PRESET_OPTION_TEXT));
 				dropdown.value = 0;
+				current_selected_preset_index = 0;
 				dropdown.RefreshShownValue();
+				dropdown.onValueChanged.RemoveAllListeners();
+				dropdown.onValueChanged.AddListener(index => {HandleDropdownSelection(dropdown, index);});
 			} else {
 				Plugin.Log.LogError("Dropdown component not found in cloned widget.");
 			}
@@ -139,45 +150,31 @@ namespace CustomRulesPresets.UI {
 			clonedDropdown.SetActive(show);
 		}
 
-		private static void SetupDynamicDropdown(TMP_Dropdown dropdown, string firstOptionText) {
-			dropdown.options = new List<TMP_Dropdown.OptionData> {new TMP_Dropdown.OptionData(firstOptionText), new TMP_Dropdown.OptionData("New")};
-
-			dropdown.value = 0;
-			dropdown.RefreshShownValue();
-
-			dropdown.onValueChanged.RemoveAllListeners();
-			dropdown.onValueChanged.AddListener(index => {HandleDropdownSelection(dropdown, index);});
-		}
-
-		private static void HandleDropdownSelection(TMP_Dropdown dropdown, int selectedIndex) {
-			if (selectedIndex < 0 || selectedIndex >= dropdown.options.Count)
+		private static void HandleDropdownSelection(TMP_Dropdown dropdown, int selected_index) {
+			if (selected_index < 0 || selected_index >= dropdown.options.Count)
 				return;
 
-			string selectedText = dropdown.options[selectedIndex].text;
+			string selectedText = dropdown.options[selected_index].text;
 
-			if (selectedText != "New")
+			if (selectedText != NEW_PRESET_OPTION_TEXT) {
+				CustomRulesPresetsManager.preset_load_settings(selected_index);
+				current_selected_preset_index = selected_index;
 				return;
+			}
 
-			// Example generated name; change to your own naming scheme
-			string generatedName = $"Preset {dropdown.options.Count	- 1}";
+			dropdown.options.Insert(dropdown.options.Count - 1, new TMP_Dropdown.OptionData($"Preset {dropdown.options.Count}"));
+			CustomRulesPresetsManager.preset_create();
 
-			InsertBeforeNew(dropdown, generatedName);
-
-			// Select the newly inserted item
-			int newIndex = dropdown.options.Count - 2;
-			dropdown.SetValueWithoutNotify(newIndex);
-			dropdown.RefreshShownValue();
-		}
-
-		public static void InsertBeforeNew(TMP_Dropdown dropdown, string text) {
-			int newIndex = Mathf.Max(0, dropdown.options.Count - 1);
-			dropdown.options.Insert(newIndex, new TMP_Dropdown.OptionData(text));
+			// selected_index is the "New Preset" option, and is now the newly inserted option, so we want to go back to the last actual preset option.
+			dropdown.SetValueWithoutNotify(current_selected_preset_index);
 			dropdown.RefreshShownValue();
 		}
 
 		public static void reset() {
 			instance_match_setup_menu = null!;
-			preset_entries.Clear();
+			presets_options = null!;
+			current_selected_preset_index = -1;
+			//preset_entries.Clear();
 			Plugin.Log.LogDebug("UIManager has been reset.");
 		}
 
