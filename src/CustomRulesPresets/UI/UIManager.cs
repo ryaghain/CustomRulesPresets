@@ -201,7 +201,7 @@ namespace CustomRulesPresets.UI {
 
 			if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "Setting up CustomRulesPresetsManager...");};
 			Error setup_error_code = CustomRulesPresetsManager.setup(instance_match_setup_menu.rules);
-			if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"CustomRulesPresetsManager exted setup with code: {setup_error_code.ToString()}");};
+			if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"CustomRulesPresetsManager exited setup with error: {setup_error_code.ToString()}");};
 
 			return Error.Success;
 		}
