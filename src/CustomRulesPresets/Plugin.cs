@@ -30,6 +30,7 @@ namespace CustomRulesPresets {
 
         private void Awake() {
             Log = Logger;
+            Utilities.do_log_debug = true;
             Log.LogInfo($"{Name} is loaded, beginning patches...");
 
             harmony = new Harmony(Id);
@@ -44,17 +45,17 @@ namespace CustomRulesPresets {
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(MatchSetupMenu), nameof(MatchSetupMenu.OnStartClient))]
 		public static void hook(MatchSetupMenu __instance) {
-            Plugin.Log.LogDebug("MatchSetupMenu.OnStartClient postfix hook called, setting up UIManager...");
+            if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "MatchSetupMenu.OnStartClient postfix hook called, setting up UIManager...");};
 			Error setup_error_code = UIManager.setup(__instance);
-            Plugin.Log.LogDebug($"UIManager exited setup with code: {setup_error_code.ToString()}");
+            if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"UIManager exited setup with code: {setup_error_code.ToString()}");};
 		}
 
         [HarmonyPostfix]
 		[HarmonyPatch(typeof(MatchSetupMenu), nameof(MatchSetupMenu.OnDestroy))]
 		public static void reset() {
-            Plugin.Log.LogDebug("MatchSetupMenu.OnDestroy postfix hook called, resetting UIManager...");
+            if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "MatchSetupMenu.OnDestroy postfix hook called, resetting UIManager...");};
             UIManager.reset();
-            Plugin.Log.LogDebug("Finished reset.");
+            if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "Finished reset.");};
 		}
 	}
 }

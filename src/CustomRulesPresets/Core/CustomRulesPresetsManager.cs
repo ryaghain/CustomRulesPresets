@@ -30,13 +30,13 @@ namespace CustomRulesPresets.Core {
 
 		public static CustomRulesPreset preset_get(int preset_index) {
 			if (preset_index < 0 || preset_index >= custom_rules_presets.Count) {
-				Plugin.Log.LogError($"Invalid preset index {preset_index} in preset_get, returning empty preset...");
+				Utilities.log_verbose(Utilities.LogType.Error, $"Invalid preset index {preset_index} in preset_get, returning empty preset...");
 				return new CustomRulesPreset();
 			}
 
 			CustomRulesPreset preset = custom_rules_presets[preset_index];
 			if (preset.rules_settings == null || preset.item_spawn_chance_weights == null) {
-				Plugin.Log.LogError($"Preset at index {preset_index} is not properly initialized, returning empty preset...");
+				Utilities.log_verbose(Utilities.LogType.Error, $"Preset at index {preset_index} is not properly initialized, returning empty preset...");
 				return new CustomRulesPreset();
 			}
 
@@ -46,10 +46,10 @@ namespace CustomRulesPresets.Core {
 		// Deletes the preset at the provided index from the custom_rules_presets list.
 		public static Error preset_delete(int preset_index) {
 			if (preset_index < 0 || preset_index >= custom_rules_presets.Count) {
-				Plugin.Log.LogError($"Invalid preset index {preset_index} in preset_delete.");
+				Utilities.log_verbose(Utilities.LogType.Error, $"Invalid preset index {preset_index} in preset_delete.");
 				return Error.ArgumentOutOfRange;
 			} else if (current_selected_preset_index == preset_index) {
-				Plugin.Log.LogError($"Cannot delete preset at index {preset_index} because it is currently selected. Load a different preset before deleting this one.");
+				Utilities.log_verbose(Utilities.LogType.Error, $"Cannot delete preset at index {preset_index} because it is currently selected. Load a different preset before deleting this one.");
 				return Error.GenericFailure;
 			}
 
@@ -60,7 +60,7 @@ namespace CustomRulesPresets.Core {
 		// Loads the settings from the preset at the provided index into the MatchSetupRules instance.
 		public static Error preset_load_settings(int preset_index) {
 			if (preset_index < 0 || preset_index >= custom_rules_presets.Count) {
-				Plugin.Log.LogError($"Invalid preset index {preset_index} in preset_load_settings.");
+				Utilities.log_verbose(Utilities.LogType.Error, $"Invalid preset index {preset_index} in preset_load_settings.");
 				return Error.ArgumentOutOfRange;
 			} else if (preset_index == current_selected_preset_index) {
 				Plugin.Log.LogInfo($"Preset at index {preset_index} is already selected, skipping load.");
@@ -69,21 +69,21 @@ namespace CustomRulesPresets.Core {
 
 			CustomRulesPreset preset = preset_get(preset_index);
 			if (preset.rules_settings.Count == 0 || preset.item_spawn_chance_weights.Count == 0) {
-				Plugin.Log.LogError($"Preset at index {preset_index} is not properly initialized.");
+				Utilities.log_verbose(Utilities.LogType.Error, $"Preset at index {preset_index} is not properly initialized.");
 				return Error.GenericFailure;
 			}
 
 			Error set_rules_error = set_rules(preset.rules_settings);
 			Plugin.Log.LogInfo($"Loaded preset {preset_index}'s rules status: {set_rules_error.ToString()}");
 			if (set_rules_error != Error.Success) {
-				Plugin.Log.LogError($"Failed to load preset {preset_index} due to error in setting rules.");
+				Utilities.log_verbose(Utilities.LogType.Error, $"Failed to load preset {preset_index} due to error in setting rules.");
 				return Error.GenericFailure;
 			}
 
 			Error set_item_spawn_chance_weights_error = set_item_spawn_chance_weights(preset.item_spawn_chance_weights);
 			Plugin.Log.LogInfo($"Loaded preset {preset_index}'s item spawn chance weights status: {set_item_spawn_chance_weights_error.ToString()}");
 			if (set_item_spawn_chance_weights_error != Error.Success) {
-				Plugin.Log.LogError($"Failed to load preset {preset_index} due to error in setting item spawn chance weights.");
+				Utilities.log_verbose(Utilities.LogType.Error, $"Failed to load preset {preset_index} due to error in setting item spawn chance weights.");
 				return Error.GenericFailure;
 			}
 
@@ -94,10 +94,10 @@ namespace CustomRulesPresets.Core {
 		// Saves the current settings from the MatchSetupRules instance into the preset at the provided index.
 		public static void preset_save_settings(int preset_index) {
 			if (preset_index < 0 || preset_index >= custom_rules_presets.Count) {
-				Plugin.Log.LogError($"Invalid preset index {preset_index} in preset_save_settings.");
+				Utilities.log_verbose(Utilities.LogType.Error, $"Invalid preset index {preset_index} in preset_save_settings.");
 				return;
 			} else if (instance_match_setup_rules == null) {
-				Plugin.Log.LogError("CustomRulesPresetsManager is not set up properly.");
+				Utilities.log_verbose(Utilities.LogType.Error, "CustomRulesPresetsManager is not set up properly.");
 				return;
 			}
 
@@ -119,13 +119,13 @@ namespace CustomRulesPresets.Core {
 		// Sets the item spawn chance weights in the MatchSetupRules instance with the provided settings.
 		public static Error set_item_spawn_chance_weights(Dictionary<MatchSetupRules.ItemPoolId, float> item_spawn_chance_weights) {
 			if (instance_match_setup_rules == null) {
-				Plugin.Log.LogError("CustomRulesPresetsManager is not set up properly.");
+				Utilities.log_verbose(Utilities.LogType.Error, "CustomRulesPresetsManager is not set up properly.");
 				return Error.GlobalVariableIsNull;
 			} else if (item_spawn_chance_weights == null) {
-				Plugin.Log.LogError("Provided argument 'item_spawn_chance_weights' is null.");
+				Utilities.log_verbose(Utilities.LogType.Error, "Provided argument 'item_spawn_chance_weights' is null.");
 				return Error.ArgumentNull;
 			} else if (item_spawn_chance_weights.Count == 0) {
-				Plugin.Log.LogError("Provided argument 'item_spawn_chance_weights' is empty.");
+				Utilities.log_verbose(Utilities.LogType.Error, "Provided argument 'item_spawn_chance_weights' is empty.");
 				return Error.ArgumentOutOfRange;
 			}
 
@@ -143,19 +143,19 @@ namespace CustomRulesPresets.Core {
 		// Sets the rules in the MatchSetupRules instance with the provided settings.
 		public static Error set_rules(Dictionary<Rule, float> rules_settings) {
 			if (instance_match_setup_rules == null) {
-				Plugin.Log.LogError("CustomRulesPresetsManager is not set up properly.");
+				Utilities.log_verbose(Utilities.LogType.Error, "CustomRulesPresetsManager is not set up properly.");
 				return Error.GlobalVariableIsNull;
 			} else if (rules_settings == null) {
-				Plugin.Log.LogError("Provided rules settings are null.");
+				Utilities.log_verbose(Utilities.LogType.Error, "Provided rules settings are null.");
 				return Error.ArgumentNull;
 			} else if (rules_settings.Count == 0) {
-				Plugin.Log.LogError("Provided rules settings are empty.");
+				Utilities.log_verbose(Utilities.LogType.Error, "Provided rules settings are empty.");
 				return Error.ArgumentOutOfRange;
 			}
 
 			SyncDictionary<Rule, float> instance_rules_dict = instance_match_setup_rules.rules;
 			if (instance_rules_dict == null) {
-				Plugin.Log.LogError("Failed to set rules: instance_rules_dict is null.");
+				Utilities.log_verbose(Utilities.LogType.Error, "Failed to set rules: instance_rules_dict is null.");
 				return Error.LocalVariableIsNull;
 			}
 			instance_rules_dict.Clear();
@@ -170,7 +170,7 @@ namespace CustomRulesPresets.Core {
 		// Stores the provided MatchSetupRules instance and retrieves the necessary FieldInfo and MethodInfo for later use.
 		public static Error setup(MatchSetupRules? new_instance_match_setup_rules) {
 			if (new_instance_match_setup_rules == null) {
-				Plugin.Log.LogError("Failed to set up CustomRulesPresetsManager: the provided instance is null.");
+				Utilities.log_verbose(Utilities.LogType.Error, "Failed to set up CustomRulesPresetsManager: the provided instance is null.");
 				return Error.GenericFailure;
 			}
 
@@ -179,7 +179,7 @@ namespace CustomRulesPresets.Core {
 				preset_create();
 			}
 
-			Plugin.Log.LogDebug("CustomRulesPresetsManager setup done.");
+			if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "CustomRulesPresetsManager setup done.");};
 			return Error.Success;
 		}
 	}

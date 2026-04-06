@@ -5,9 +5,30 @@ using System.Linq;
 using System.IO;
 using Newtonsoft.Json;
 using UnityEngine;
+using System.Runtime.CompilerServices;
 
 namespace CustomRulesPresets {
-    public static class ChildrenVisualizer {
+    public static class Utilities {
+        public static bool do_log_debug = false;
+
+        public enum LogType {
+            Error,
+            Debug
+        }
+
+        public static void log_verbose(LogType log_type, string message, [CallerMemberName] string member_name = "", [CallerLineNumber] int line_number = 0) {
+            switch (log_type) {
+                case LogType.Error:
+                    Plugin.Log.LogError($"{member_name} at line {line_number}: {message}");
+                    break;
+                case LogType.Debug:
+                    Plugin.Log.LogDebug($"{member_name} at line {line_number}: {message}");
+                    break;
+                default:
+                    Plugin.Log.LogInfo(message);
+                    break;
+            }
+        }
 
         public static void SaveJsonToFile(string json, string filePath) {
             string directory = Path.GetDirectoryName(filePath);

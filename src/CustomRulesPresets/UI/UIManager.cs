@@ -32,7 +32,7 @@ namespace CustomRulesPresets.UI {
 			Transform source = matchSetupMenu.transform.Find("Menu/Background/Match Setup/Columns/Mode/Dropdown Option Variant");
 
 			if (source == null) {
-				Plugin.Log.LogError("Source dropdown option not found.");
+				Utilities.log_verbose(Utilities.LogType.Error, "Source dropdown option not found.");
 				return null!;
 			}
 
@@ -40,14 +40,14 @@ namespace CustomRulesPresets.UI {
 			Transform content = matchSetupMenu.transform.Find("Menu/Background/Rules/Rules/Scroll View/Viewport/Content");
 
 			if (content == null) {
-				Plugin.Log.LogError("Rules content container not found.");
+				Utilities.log_verbose(Utilities.LogType.Error, "Rules content container not found.");
 				return null!;
 			}
 
 			// Anchor object we want to insert before
 			Transform itemProbabilities = content.Find("Item probabilities");
 			if (itemProbabilities == null) {
-				Plugin.Log.LogError("'Item probabilities' section not found.");
+				Utilities.log_verbose(Utilities.LogType.Error, "'Item probabilities' section not found.");
 				return null!;
 			}
 
@@ -90,7 +90,7 @@ namespace CustomRulesPresets.UI {
 				dropdown.onValueChanged.RemoveAllListeners();
 				dropdown.onValueChanged.AddListener(index => {HandleDropdownSelection(dropdown, index);});
 			} else {
-				Plugin.Log.LogError("Dropdown component not found in cloned widget.");
+				Utilities.log_verbose(Utilities.LogType.Error, "Dropdown component not found in cloned widget.");
 			}
 
 			// Strongly recommended: add a LayoutElement so it sizes like surrounding rows
@@ -113,12 +113,12 @@ namespace CustomRulesPresets.UI {
 			Transform categories = matchSetupMenu.transform.Find("Menu/Background/Rules/Header/Categories");
 
 			if (categories == null) {
-				Plugin.Log.LogError("Could not find Rules/Header/Categories.");
+				Utilities.log_verbose(Utilities.LogType.Error, "Could not find Rules/Header/Categories.");
 				return;
 			}
 
 			if (clonedDropdown == null) {
-				Plugin.Log.LogError("clonedDropdown is null.");
+				Utilities.log_verbose(Utilities.LogType.Error, "clonedDropdown is null.");
 				return;
 			}
 
@@ -159,7 +159,7 @@ namespace CustomRulesPresets.UI {
 			if (selectedText != NEW_PRESET_OPTION_TEXT) {
 				Error load_error = CustomRulesPresetsManager.preset_load_settings(selected_index);
 				if (load_error != Error.Success) {
-					Plugin.Log.LogError($"Failed to load preset at index {selected_index}. Restoring previous dropdown selection...");
+					Utilities.log_verbose(Utilities.LogType.Error, $"Failed to load preset at index {selected_index}. Restoring previous dropdown selection...");
 					dropdown.SetValueWithoutNotify(current_selected_preset_index);
 					dropdown.RefreshShownValue();
 					return;
@@ -182,12 +182,12 @@ namespace CustomRulesPresets.UI {
 			presets_options = null!;
 			current_selected_preset_index = -1;
 			//preset_entries.Clear();
-			Plugin.Log.LogDebug("UIManager has been reset.");
+			if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "UIManager has been reset.");};
 		}
 
 		public static Error setup(MatchSetupMenu new_instance_match_setup_menu) {
 			if (new_instance_match_setup_menu == null) {
-				Plugin.Log.LogError("UIManager is not set up properly.");
+				Utilities.log_verbose(Utilities.LogType.Error, "UIManager is not set up properly.");
 				return Error.GenericFailure;
 			}
 			instance_match_setup_menu = new_instance_match_setup_menu;
@@ -199,9 +199,9 @@ namespace CustomRulesPresets.UI {
 				BindCategoryButtons(instance_match_setup_menu.menu, presets_options);
 			}
 
-			Plugin.Log.LogDebug("Setting up CustomRulesPresetsManager...");
+			if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "Setting up CustomRulesPresetsManager...");};
 			Error setup_error_code = CustomRulesPresetsManager.setup(instance_match_setup_menu.rules);
-			Plugin.Log.LogDebug($"CustomRulesPresetsManager exted setup with code: {setup_error_code.ToString()}");
+			if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"CustomRulesPresetsManager exted setup with code: {setup_error_code.ToString()}");};
 
 			return Error.Success;
 		}
