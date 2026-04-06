@@ -31,12 +31,18 @@
     <Reference Include="UnityEngine.UI">
       <HintPath>D:\Modding\SuperBattleGolf\UnityEngine.UI-publicized.dll</HintPath>
     </Reference>
+    <Reference Include="Unity.Localization">
+      <HintPath>D:\Modding\SuperBattleGolf\Unity.Localization-publicized.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.TextMeshPro">
       <HintPath>D:\Modding\SuperBattleGolf\Unity.TextMeshPro-publicized.dll</HintPath>
     </Reference>
     <Reference Include="Mirror">
       <HintPath>D:\Modding\SuperBattleGolf\Mirror-publicized.dll</HintPath>
     </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
 
   <!--

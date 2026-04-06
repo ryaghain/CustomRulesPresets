@@ -9,6 +9,19 @@
 			"label": "dotnet: build"
 		},
 		{
+			"label": "extract zip",
+			"type": "process",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"Expand-Archive -LiteralPath '${workspaceFolder}\\artifacts\\thunderstore\\ryaghain-CustomRulesPresets-0.1.0.zip' -DestinationPath 'C:\\Users\\ryan\\AppData\\Roaming\\com.kesomannen.gale\\super-battle-golf\\profiles\\ModDev\\BepInEx\\plugins\\CustomRulesPresets' -Force"
+			],
+			"problemMatcher": []
+		},
+		{
 			"label": "dotnet build Release",
 			"type": "process",
 			"command": "dotnet",
@@ -23,9 +36,22 @@
 			],
 			"group": {
 				"kind": "build",
-				"isDefault": true
+				"isDefault": false
 			},
 			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "build then extract",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"dotnet build Release",
+				"extract zip"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": []
 		}
 	]
 }

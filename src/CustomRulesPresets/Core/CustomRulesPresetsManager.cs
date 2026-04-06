@@ -4,7 +4,7 @@ using static MatchSetupRules;
 namespace CustomRulesPresets.Core {
 	public static class CustomRulesPresetsManager {
 
-		public static MatchSetupRules? instance_match_setup_rules = null;
+		public static MatchSetupRules instance_match_setup_rules = null!;
 
 		public static List<CustomRulesPreset> custom_rules_presets = new List<CustomRulesPreset>();
 		public static int current_selected_preset_index = -1;
