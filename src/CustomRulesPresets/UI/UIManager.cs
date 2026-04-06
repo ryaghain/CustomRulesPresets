@@ -98,6 +98,47 @@ namespace CustomRulesPresets.UI {
 			return clone;
 		}
 
+		public static void BindCategoryButtons(GameObject matchSetupMenu,GameObject clonedDropdown) {
+			Transform categories = matchSetupMenu.transform.Find("Menu/Background/Rules/Header/Categories");
+
+			if (categories == null) {
+				Plugin.Log.LogError("Could not find Rules/Header/Categories.");
+				return;
+			}
+
+			if (clonedDropdown == null) {
+				Plugin.Log.LogError("clonedDropdown is null.");
+				return;
+			}
+
+			bool show = false;
+
+			for (int i = 0; i < categories.childCount; i++) {
+				Transform category = categories.GetChild(i);
+
+				Button button = category.GetComponent<Button>();
+				Transform selection = category.Find("Selection");
+				TMP_Text text = category.Find("Text (TMP)")?.GetComponent<TMP_Text>()!;
+
+				if (button == null || text == null)
+					continue;
+
+				string label = text.text.Trim();
+
+				if (label == "Custom") {
+					button.onClick.AddListener(() => {clonedDropdown.SetActive(true);});
+				} else if (label == "Classic" || label == "Pro Golf") {
+					button.onClick.AddListener(() => {clonedDropdown.SetActive(false);});
+				}
+
+				if (selection != null && selection.gameObject.activeSelf && text != null && text.text.Trim() == "Custom") {
+                	show = true;
+           		}
+			}
+
+			clonedDropdown.SetActive(show);
+		}
+
 		private static void SetupDynamicDropdown(TMP_Dropdown dropdown, string firstOptionText) {
 			dropdown.options = new List<TMP_Dropdown.OptionData> {new TMP_Dropdown.OptionData(firstOptionText), new TMP_Dropdown.OptionData("New")};
 
@@ -151,6 +192,7 @@ namespace CustomRulesPresets.UI {
 				//ChildrenVisualizer.SaveJsonToFile(ChildrenVisualizer.ToJson(all_children), "Debug/MatchSetupMenu_all_children.json");
 
 				presets_options = InsertDropdownAboveItemProbabilities(instance_match_setup_menu.menu, "Presets", "Preset 1");
+				BindCategoryButtons(instance_match_setup_menu.menu, presets_options);
 			}
 
 			Plugin.Log.LogDebug("Setting up CustomRulesPresetsManager...");
