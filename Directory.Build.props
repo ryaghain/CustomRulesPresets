@@ -1,11 +1,15 @@
 <Project>
+<!--#if (!no-tutorial) -->
   <!--
     This is a special file that contains shared configuration
     for all project files in subdirectories.
   -->
 
+<!--#endif -->
   <PropertyGroup>
+<!--#if (!no-tutorial) -->
     <!-- Define a variable that points to this directory. -->
+<!--#endif -->
     <SolutionRoot>$(MSBuildThisFileDirectory)</SolutionRoot>
   </PropertyGroup>
 
@@ -15,32 +19,62 @@
     Condition="Exists('$(SolutionRoot)Config.Build.user.props')"
   />
 
+<!--#if (library) -->
+  <!-- NuGet -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <!--
+      TODO: Fill these values. See:
+      https://learn.microsoft.com/en-us/nuget/create-packages/package-authoring-best-practices
+    -->
+    <Authors></Authors>
+    <PackageLicenseExpression></PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageTags>Super Battle Golf;$(PackageTags)</PackageTags>
+  </PropertyGroup>
+
+<!--#endif -->
   <!-- Primary configuration for the project -->
   <PropertyGroup>
+<!--#if (!no-tutorial) -->
     <!-- Use latest C# version. -->
+<!--#endif -->
     <LangVersion>latest</LangVersion>
+<!--#if (!no-tutorial) -->
     <!-- See: https://learn.microsoft.com/en-us/dotnet/csharp/nullable-references -->
+<!--#endif -->
     <Nullable>enable</Nullable>
+<!--#if (!no-tutorial) -->
     <!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/overview -->
+<!--#endif -->
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisMode>recommended</AnalysisMode>
+<!--#if (!no-tutorial) -->
     <!-- Build, and other generated files go nicely into artifacts/ directory. -->
+<!--#endif -->
     <UseArtifactsOutput>true</UseArtifactsOutput>
+<!--#if (!no-tutorial) -->
     <!-- Enable debug symbols. This will show source code line numbers in stack traces. -->
+<!--#endif -->
     <DebugSymbols>true</DebugSymbols>
     <DebugType>embedded</DebugType>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+<!--#if (!no-tutorial) -->
     <!-- Substitute full path to this directory with ./, hiding it from debug symbols. -->
+<!--#endif -->
     <PathMap>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))=./</PathMap>
   </PropertyGroup>
 
   <!-- Custom props -->
   <PropertyGroup>
+<!--#if (!no-tutorial) -->
     <!--
       Default values for paths. Do not modify,
       instead configure your Config.Build.user.props file.
     -->
+<!--#endif -->
     <PathBeforeSteam Condition="'$([MSBuild]::IsOSUnixLike())' == 'true'">$(HOME)/.local/share/</PathBeforeSteam>
     <PathBeforeSteam Condition="'$([MSBuild]::IsOSUnixLike())' != 'true'">$(MSBuildProgramFiles32)/</PathBeforeSteam>
     <SuperBattleGolfGameRootDir Condition="$(SuperBattleGolfGameRootDir) == ''">$(PathBeforeSteam)Steam/steamapps/common/Super Battle Golf/</SuperBattleGolfGameRootDir>
