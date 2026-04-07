@@ -6,6 +6,7 @@ using System.IO;
 using Newtonsoft.Json;
 using UnityEngine;
 using System.Runtime.CompilerServices;
+using CustomRulesPresets.Core;
 
 namespace CustomRulesPresets {
     public static class Utilities {
@@ -51,7 +52,7 @@ namespace CustomRulesPresets {
         public static string item_spawn_chance_weights_dict_to_json(Dictionary<MatchSetupRules.ItemPoolId, float> source, bool prettyPrint = true) {
             Dictionary<string, string> normalized_dict = new Dictionary<string, string>();
             foreach (KeyValuePair<MatchSetupRules.ItemPoolId, float> kvp in source) {
-                string key = $"Item Type: {kvp.Key.itemType.ToString()}, Item Index: {kvp.Key.itemPoolIndex}";
+                string key = $"Item Type: {kvp.Key.itemType.ToString()}, Item Index: {Enum.GetName(typeof(CustomRulesPresetsManager.ItemPoolIndex), kvp.Key.itemPoolIndex)}";
                 normalized_dict[key] = kvp.Value.ToString();
             }
         
