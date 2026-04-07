@@ -135,46 +135,6 @@ namespace CustomRulesPresets.Core {
 		public static Error last_preset_get_error = Error.Success;
 		public static int current_selected_preset_index = -1;
 
-
-		// Creates and returns a new CustomRulesPreset with the current settings from the MatchSetupRules instance.
-		//public static void preset_create() {
-		//	int new_preset_index = custom_rules_presets.Count;
-		//	custom_rules_presets.Add(new CustomRulesPreset());
-		//	//preset_save_settings(new_preset_index);
-		//}
-
-		//public static CustomRulesPreset preset_get(int preset_index) {
-		//	if (preset_index < 0 || preset_index >= custom_rules_presets.Count) {
-		//		Utilities.log_verbose(Utilities.LogType.Error, $"Invalid preset index {preset_index} in preset_get, returning empty preset...");
-		//		last_preset_get_error = Error.ArgumentOutOfRange;
-		//		return new CustomRulesPreset();
-		//	}
-//
-		//	CustomRulesPreset preset = custom_rules_presets[preset_index];
-		//	if (preset.rules_settings == null || preset.item_spawn_chance_weights == null) {
-		//		Utilities.log_verbose(Utilities.LogType.Error, $"Preset at index {preset_index} is not properly initialized, returning empty preset...");
-		//		last_preset_get_error = Error.GenericFailure;
-		//		return new CustomRulesPreset();
-		//	}
-//
-		//	last_preset_get_error = Error.Success;
-		//	return preset;
-		//}
-		
-		// Deletes the preset at the provided index from the custom_rules_presets list.
-		//public static Error preset_delete(int preset_index) {
-		//	if (preset_index < 0 || preset_index >= custom_rules_presets.Count) {
-		//		Utilities.log_verbose(Utilities.LogType.Error, $"Invalid preset index {preset_index} in preset_delete.");
-		//		return Error.ArgumentOutOfRange;
-		//	} else if (current_selected_preset_index == preset_index) {
-		//		Utilities.log_verbose(Utilities.LogType.Error, $"Cannot delete preset at index {preset_index} because it is currently selected. Load a different preset before deleting this one.");
-		//		return Error.GenericFailure;
-		//	}
-//
-		//	custom_rules_presets.RemoveAt(preset_index);
-		//	return Error.Success;
-		//}
-
 		// Loads the settings from the preset at the provided index into the MatchSetupRules instance.
 		public static Error preset_load_settings(int preset_index) {
 			if (preset_index < 0 || preset_index >= custom_rules_presets_data.count()) {
