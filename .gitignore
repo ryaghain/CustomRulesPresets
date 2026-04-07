@@ -226,5 +226,5 @@ artifacts/**/*.zip
 *.txt
 artifacts/**
 Config.Build.user.props
-.vscode
-.config
+.vscode/
+.config/
