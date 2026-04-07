@@ -41,7 +41,26 @@
 			"problemMatcher": "$msCompile"
 		},
 		{
-			"label": "build then extract",
+			"label": "dotnet build Debug",
+			"type": "process",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"${workspaceFolder}/CustomRulesPresets.slnx",
+				"-c",
+				"Debug",
+				"/property:GenerateFullPaths=true",
+				"/p:Platform=Any CPU",
+				"/consoleloggerparameters:NoSummary"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": false
+			},
+			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "build (release) then extract",
 			"dependsOrder": "sequence",
 			"dependsOn": [
 				"dotnet build Release",
@@ -50,6 +69,19 @@
 			"group": {
 				"kind": "build",
 				"isDefault": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "build (debug) then extract",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"dotnet build Debug",
+				"extract zip"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": false
 			},
 			"problemMatcher": []
 		}

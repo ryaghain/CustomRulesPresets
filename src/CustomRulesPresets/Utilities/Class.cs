@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace CustomRulesPresets {
     public static class Utilities {
-        public static bool do_log_debug = false;
+        public static bool do_log_debug = true;
 
         public enum LogType {
             Error,
@@ -39,7 +39,7 @@ namespace CustomRulesPresets {
             File.WriteAllText(filePath, json);
         }
 
-        public static string ToJson(Dictionary<GameObject, object> source, bool prettyPrint = true) {
+        public static string ToJson(Dictionary<object, object> source, bool prettyPrint = true) {
             object normalized_dict = NormalizeGameObjectDictionary(source);
         
             return JsonConvert.SerializeObject(
@@ -48,11 +48,37 @@ namespace CustomRulesPresets {
             );
         }
 
-        private static object NormalizeGameObjectDictionary(Dictionary<GameObject, object> dict) {
+        public static string item_spawn_chance_weights_dict_to_json(Dictionary<MatchSetupRules.ItemPoolId, float> source, bool prettyPrint = true) {
+            Dictionary<string, string> normalized_dict = new Dictionary<string, string>();
+            foreach (KeyValuePair<MatchSetupRules.ItemPoolId, float> kvp in source) {
+                string key = $"Item Type: {kvp.Key.itemType.ToString()}, Item Index: {kvp.Key.itemPoolIndex}";
+                normalized_dict[key] = kvp.Value.ToString();
+            }
+        
+            return JsonConvert.SerializeObject(
+                normalized_dict,
+                prettyPrint ? Formatting.Indented : Formatting.None
+            );
+        }
+
+        public static string rules_dict_to_json(Dictionary<MatchSetupRules.Rule, float> source, bool prettyPrint = true) {
+            Dictionary<string, string> normalized_dict = new Dictionary<string, string>();
+            foreach (KeyValuePair<MatchSetupRules.Rule, float> kvp in source) {
+                string key = kvp.Key.ToString();
+                normalized_dict[key] = kvp.Value.ToString();
+            }
+        
+            return JsonConvert.SerializeObject(
+                normalized_dict,
+                prettyPrint ? Formatting.Indented : Formatting.None
+            );
+        }
+
+        private static object NormalizeGameObjectDictionary(Dictionary<object, object> dict) {
             var result = new Dictionary<string, object>();
 
-            foreach (KeyValuePair<GameObject, object> kvp in dict) {
-                string key = GetGameObjectKey(kvp.Key);
+            foreach (KeyValuePair<object, object> kvp in dict) {
+                string key = GetObjectKey(kvp.Key);
                 result[key] = NormalizeValue(kvp.Value);
             }
 
@@ -75,10 +101,10 @@ namespace CustomRulesPresets {
 
             // GameObject value -> string representation
             if (value is GameObject go)
-                return GetGameObjectKey(go);
+                return GetObjectKey(go);
 
             // Nested Dictionary<GameObject, object>
-            if (value is Dictionary<GameObject, object> nestedGoDict)
+            if (value is Dictionary<object, object> nestedGoDict)
                 return NormalizeGameObjectDictionary(nestedGoDict);
 
             // Generic IDictionary with non-GameObject keys
@@ -124,11 +150,16 @@ namespace CustomRulesPresets {
             return value.ToString();
         }
 
-        private static string GetGameObjectKey(GameObject go) {
-            if (go == null)
+        private static string GetObjectKey(object go) {
+            if (go == null) {
                 return "null";
-
-            return GetHierarchyPath(go.transform);
+            } else if (go is GameObject gameObject) {
+                return GetHierarchyPath(gameObject.transform);
+            } else if (go is MatchSetupRules.ItemPoolId itemPoolId) {
+                return $"Item Type: {itemPoolId.itemType.ToString()}, Item Index: {itemPoolId.itemPoolIndex}";
+            } else {
+                return go.ToString() ?? "null";
+            };
         }
 
         private static string GetHierarchyPath(Transform transform) {

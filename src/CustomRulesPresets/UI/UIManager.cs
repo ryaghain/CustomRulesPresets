@@ -157,6 +157,14 @@ namespace CustomRulesPresets.UI {
 			string selectedText = dropdown.options[selected_index].text;
 
 			if (selectedText != NEW_PRESET_OPTION_TEXT) {
+				Error save_error = CustomRulesPresetsManager.preset_save_settings(current_selected_preset_index);
+				if (save_error != Error.Success) {
+					Utilities.log_verbose(Utilities.LogType.Error, $"Failed to save the current preset at index {current_selected_preset_index} before switching. Restoring previous dropdown selection...");
+					dropdown.SetValueWithoutNotify(current_selected_preset_index);
+					dropdown.RefreshShownValue();
+					return;
+				}
+
 				Error load_error = CustomRulesPresetsManager.preset_load_settings(selected_index);
 				if (load_error != Error.Success) {
 					Utilities.log_verbose(Utilities.LogType.Error, $"Failed to load preset at index {selected_index}. Restoring previous dropdown selection...");
@@ -170,7 +178,7 @@ namespace CustomRulesPresets.UI {
 			}
 
 			dropdown.options.Insert(dropdown.options.Count - 1, new TMP_Dropdown.OptionData($"Preset {dropdown.options.Count}"));
-			CustomRulesPresetsManager.preset_create();
+			CustomRulesPresetsManager.preset_save_settings(CustomRulesPresetsManager.custom_rules_presets_data.preset_create());
 
 			// selected_index is the "New Preset" option, and is now the newly inserted option, so we want to go back to the last actual preset option.
 			dropdown.SetValueWithoutNotify(current_selected_preset_index);

@@ -47,7 +47,7 @@ namespace CustomRulesPresets {
 		public static void hook(MatchSetupMenu __instance) {
             if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "MatchSetupMenu.OnStartClient postfix hook called, setting up UIManager...");};
 			Error setup_error_code = UIManager.setup(__instance);
-            if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"UIManager exited setup with code: {setup_error_code.ToString()}");};
+            if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"UIManager exited setup with error: {setup_error_code.ToString()}");};
 		}
 
         [HarmonyPostfix]
