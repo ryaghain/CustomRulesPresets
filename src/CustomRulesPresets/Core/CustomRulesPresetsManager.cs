@@ -25,6 +25,7 @@ namespace CustomRulesPresets.Core {
 			public int preset_create(string json = "") {
 				if (string.IsNullOrEmpty(json)) {
 					data.Add(new CustomRulesPreset());
+					preset_save_settings(data.Count - 1);
 				} else {
 					data.Add(new CustomRulesPreset(json));
 				}

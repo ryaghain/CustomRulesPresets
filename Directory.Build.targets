@@ -62,7 +62,7 @@
   </ItemGroup>
 
   <!-- Copy mod files defined in projects to the target BepInEx directory -->
-  <Target Name="DeployFiles" AfterTargets="Build" Condition="'$(DeployModFilesEnabled)' == 'true'">
+  <!--<Target Name="DeployFiles" AfterTargets="Build" Condition="'$(DeployModFilesEnabled)' == 'true'">
     <PropertyGroup>
       <_TargetDir>$([MSBuild]::NormalizeDirectory($(SuperBattleGolfBepInExDir)))</_TargetDir>
     </PropertyGroup>
@@ -75,7 +75,7 @@
       Condition="!Exists('$(_TargetDir)')"
     />
     <Copy SourceFiles="@(DeployModFiles)" DestinationFolder="$(_TargetDir)%(BepInExDir)" />
-  </Target>
+  </Target> -->
 
   <!--
     To make building Thunderstore packages uncoupled from release builds, swap
