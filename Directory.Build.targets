@@ -106,6 +106,6 @@
       <BuildArgument Condition="'$(PublishTS)' == 'true'">publish</BuildArgument>
     </PropertyGroup>
     <Exec Command="dotnet tool restore" />
-    <Exec Command="dotnet tcli $(BuildArgument) --package-version $(Version)" />
+    <Exec Command=".\tcli.exe $(BuildArgument) --package-version $(Version)" />
   </Target>
 </Project>
