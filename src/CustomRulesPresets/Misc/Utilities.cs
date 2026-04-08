@@ -10,7 +10,7 @@ using CustomRulesPresets.Core;
 
 namespace CustomRulesPresets {
     public static class Utilities {
-        public static bool do_log_debug = true;
+        public static bool do_log_debug = false;
 
         public enum LogType {
             Error,

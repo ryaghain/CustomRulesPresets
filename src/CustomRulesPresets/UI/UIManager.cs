@@ -161,6 +161,7 @@ namespace CustomRulesPresets.UI {
 				dropdown.options.Insert(dropdown.options.Count - 1, new TMP_Dropdown.OptionData($"Preset {dropdown.options.Count}"));
 				new_preset_index = CustomRulesPresetsManager.custom_rules_presets_data.preset_create();
 
+				// Using "Insert" with an index above the selected index will bump the interally selected index down by one so it's still on "New Preset" here, we need to move it back up one to the newly inserted index.
 				dropdown.SetValueWithoutNotify(selected_index);
 				dropdown.RefreshShownValue();
 			}

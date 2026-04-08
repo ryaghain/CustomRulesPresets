@@ -3,6 +3,7 @@ using BepInEx.Bootstrap;
 using BepInEx.Logging;
 using HarmonyLib;
 using CustomRulesPresets.UI;
+using CustomRulesPresets.Core;
 
 /* 
 TODO:
@@ -25,14 +26,19 @@ namespace CustomRulesPresets {
     [BepInAutoPlugin]
     [BepInProcess("Super Battle Golf.exe")]
     public partial class Plugin: BaseUnityPlugin {
-        internal static ManualLogSource Log { get; private set; } = null!;
+        internal static ManualLogSource Log {get; private set;} = null!;
+        public static ConfigManager config_manager = null!;
         public static Harmony harmony = null!;
 
         private void Awake() {
             Log = Logger;
-            Utilities.do_log_debug = true;
-            Log.LogInfo($"{Name} is loaded, beginning patches...");
 
+            Log.LogInfo($"Loading config file...");
+            config_manager = new ConfigManager(Config);
+            config_manager.load_config_values();
+            if (Utilities.do_log_debug) {Logger.LogInfo("Debug logging is enabled.");};
+
+            Log.LogInfo($"{Name} is loaded, beginning patches...");
             harmony = new Harmony(Id);
             harmony.PatchAll();
 
