@@ -226,7 +226,6 @@ artifacts/**/*.zip
 *.txt
 artifacts/**
 Config.Build.user.props
-Directory.Build.props
-Directory.Build.targets
 .vscode/
 .config/
+src/CustomRulesPresets/tcli.exe
