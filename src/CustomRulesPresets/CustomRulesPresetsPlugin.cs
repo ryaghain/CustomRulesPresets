@@ -25,7 +25,7 @@ namespace CustomRulesPresets {
 
     [BepInAutoPlugin]
     [BepInProcess("Super Battle Golf.exe")]
-    public partial class Plugin: BaseUnityPlugin {
+    public partial class CustomRulesPresetsPlugin: BaseUnityPlugin {
         internal static ManualLogSource Log {get; private set;} = null!;
         public static ConfigManager config_manager = null!;
         public static Harmony harmony = null!;
@@ -33,16 +33,17 @@ namespace CustomRulesPresets {
         private void Awake() {
             Log = Logger;
 
-            Log.LogInfo($"Loading config file...");
-            config_manager = new ConfigManager(Config);
-            config_manager.load_config_values();
-            if (Utilities.do_log_debug) {Logger.LogInfo("Debug logging is enabled.");};
-
-            Log.LogInfo($"{Name} is loaded, beginning patches...");
+            Log.LogInfo("Beginning patches...");
             harmony = new Harmony(Id);
             harmony.PatchAll();
 
-            Log.LogInfo($"{Name} finished patching, plugin is ready :D");
+            Log.LogInfo("Loading config file...");
+            config_manager = new ConfigManager(Config);
+            Error config_load_error = config_manager.load_config_values();
+            Logger.LogInfo($"Config load status: {config_load_error.ToString()}");
+            if (Utilities.do_log_debug) {Logger.LogInfo("Debug logging is enabled.");};
+
+            Log.LogInfo($"{Name} is ready :D");
 		}
     }
 
@@ -55,6 +56,14 @@ namespace CustomRulesPresets {
 			Error setup_error_code = UIManager.setup(__instance);
             if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"UIManager exited setup with error: {setup_error_code.ToString()}");};
 		}
+
+        [HarmonyPostfix]
+		[HarmonyPatch(typeof(MatchSetupMenu), nameof(MatchSetupMenu.OnMenuExit))]
+        public static void on_menu_exit() {
+            if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "MatchSetupMenu.OnMenuExit postfix hook called, saving presets to config...");};
+            Error config_save_error = CustomRulesPresetsPlugin.config_manager.save_presets_to_config(CustomRulesPresetsManager.custom_rules_presets_data.to_json());
+            if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"Finished saving presets to config with error: {config_save_error.ToString()}");};
+        }
 
         [HarmonyPostfix]
 		[HarmonyPatch(typeof(MatchSetupMenu), nameof(MatchSetupMenu.OnDestroy))]

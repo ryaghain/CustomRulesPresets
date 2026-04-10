@@ -14,20 +14,10 @@ namespace CustomRulesPresets.UI {
 
 		public static MatchSetupMenu instance_match_setup_menu = null!;
 		public static GameObject presets_options = null!;
+		public static TMP_Dropdown presets_dropdown = null!;
 		public static int current_selected_preset_index = -1;
 
-
-		//[Serializable]
-		//public class PresetData {
-		//	public string name_text = "Preset ";
-		//	public Action<string> on_name_text_changed = null!;
-		//	public Action on_save_icon_click = null!;
-		//	public Action on_load_icon_click = null!;
-		//	public Action on_delete_icon_click = null!;
-		//}
-		//public static List<PresetData> preset_entries = new List<PresetData>();
-
-		public static GameObject InsertDropdownAboveItemProbabilities(GameObject matchSetupMenu, string leftLabel, string firstOptionText) {
+		public static GameObject InsertDropdownAboveItemProbabilities(GameObject matchSetupMenu, string leftLabel) {
 			// Source widget to clone
 			Transform source = matchSetupMenu.transform.Find("Menu/Background/Match Setup/Columns/Mode/Dropdown Option Variant");
 
@@ -74,21 +64,20 @@ namespace CustomRulesPresets.UI {
 			}
 
 			// Configure dropdown options
-			TMP_Dropdown dropdown = clone.transform.Find("Option Contents/Dropdown")?.GetComponent<TMP_Dropdown>()!;
-			if (dropdown != null) {
+			presets_dropdown = clone.transform.Find("Option Contents/Dropdown")?.GetComponent<TMP_Dropdown>()!;
+			if (presets_dropdown != null) {
 				// This custom component is a common reason the list gets rebuilt.
-				var localizeDropdown = dropdown.GetComponent("LocalizeDropdown");
+				var localizeDropdown = presets_dropdown.GetComponent("LocalizeDropdown");
 				if (localizeDropdown != null)
 					GameObject.Destroy(localizeDropdown);
 
-				dropdown.options.Clear();
-				dropdown.options.Add(new TMP_Dropdown.OptionData(firstOptionText));
-				dropdown.options.Add(new TMP_Dropdown.OptionData(NEW_PRESET_OPTION_TEXT));
-				dropdown.value = 0;
+				presets_dropdown.options.Clear();
+				presets_dropdown.options.Add(new TMP_Dropdown.OptionData(NEW_PRESET_OPTION_TEXT));
+				presets_dropdown.value = 0;
 				current_selected_preset_index = 0;
-				dropdown.RefreshShownValue();
-				dropdown.onValueChanged.RemoveAllListeners();
-				dropdown.onValueChanged.AddListener(index => {HandleDropdownSelection(dropdown, index);});
+				presets_dropdown.RefreshShownValue();
+				presets_dropdown.onValueChanged.RemoveAllListeners();
+				presets_dropdown.onValueChanged.AddListener(index => {HandleDropdownSelection(presets_dropdown, index);});
 			} else {
 				Utilities.log_verbose(Utilities.LogType.Error, "Dropdown component not found in cloned widget.");
 			}
@@ -154,28 +143,45 @@ namespace CustomRulesPresets.UI {
 			if (selected_index < 0 || selected_index >= dropdown.options.Count)
 				return;
 
+			string current_selected_preset_name = dropdown.options[current_selected_preset_index].text;
 			int new_preset_index = selected_index;
-			string selectedText = dropdown.options[selected_index].text;
+			string new_preset_name = dropdown.options[selected_index].text;
 
-			if (selectedText == NEW_PRESET_OPTION_TEXT) {
-				dropdown.options.Insert(dropdown.options.Count - 1, new TMP_Dropdown.OptionData($"Preset {dropdown.options.Count}"));
-				new_preset_index = CustomRulesPresetsManager.custom_rules_presets_data.preset_create();
+			if (new_preset_name == NEW_PRESET_OPTION_TEXT) {
+				if (Utilities.do_log_debug) {CustomRulesPresetsPlugin.Log.LogInfo("New Preset option selected, creating new preset...");}
 
-				// Using "Insert" with an index above the selected index will bump the interally selected index down by one so it's still on "New Preset" here, we need to move it back up one to the newly inserted index.
-				dropdown.SetValueWithoutNotify(selected_index);
-				dropdown.RefreshShownValue();
-			}
-			Error save_error = CustomRulesPresetsManager.preset_save_settings(current_selected_preset_index);
-			if (save_error != Error.Success) {
-				Utilities.log_verbose(Utilities.LogType.Error, $"Failed to save the current preset at index {current_selected_preset_index} before switching. Restoring previous dropdown selection...");
+				new_preset_name = $"Preset {CustomRulesPresetsManager.custom_rules_presets_data.get_preset_count() + 1}";
+				new_preset_index = dropdown.options.Count - 1;
+
+				Error preset_duplicate_error = CustomRulesPresetsManager.custom_rules_presets_data.preset_duplicate(current_selected_preset_name, new_preset_name);
+				if (preset_duplicate_error != Error.Success) {
+					Utilities.log_verbose(Utilities.LogType.Error, $"Failed to duplicate preset '{current_selected_preset_name}' with error: {preset_duplicate_error.ToString()}");
+					dropdown.SetValueWithoutNotify(current_selected_preset_index);
+					dropdown.RefreshShownValue();
+				} else {
+					insert_new_dropdown_option(new_preset_name, new_preset_index);
+				}
+
+				return;
+
+			} else if (!CustomRulesPresetsManager.custom_rules_presets_data.has_preset(new_preset_name)) {
+				Utilities.log_verbose(Utilities.LogType.Error, $"Selected preset '{new_preset_name}' not found in presets data.");
 				dropdown.SetValueWithoutNotify(current_selected_preset_index);
 				dropdown.RefreshShownValue();
 				return;
 			}
 
-			Error load_error = CustomRulesPresetsManager.preset_load_settings(new_preset_index);
+			Error save_error = CustomRulesPresetsManager.preset_save_settings(current_selected_preset_name);
+			if (save_error != Error.Success) {
+				Utilities.log_verbose(Utilities.LogType.Error, $"Failed to save the current preset {current_selected_preset_name} before switching. Restoring previous dropdown selection...");
+				dropdown.SetValueWithoutNotify(current_selected_preset_index);
+				dropdown.RefreshShownValue();
+				return;
+			}
+
+			Error load_error = CustomRulesPresetsManager.preset_load_settings(new_preset_name);
 			if (load_error != Error.Success) {
-				Utilities.log_verbose(Utilities.LogType.Error, $"Failed to load preset at index {new_preset_index}. Restoring previous dropdown selection...");
+				Utilities.log_verbose(Utilities.LogType.Error, $"Failed to load preset {new_preset_name}. Restoring previous dropdown selection...");
 				dropdown.SetValueWithoutNotify(current_selected_preset_index);
 				dropdown.RefreshShownValue();
 				return;
@@ -184,11 +190,26 @@ namespace CustomRulesPresets.UI {
 			current_selected_preset_index = new_preset_index;
 		}
 
+		public static Error insert_new_dropdown_option(string option_text, int option_index = -1, bool set_value = true) {
+			if (presets_dropdown == null) {
+				Utilities.log_verbose(Utilities.LogType.Error, "Cannot insert new dropdown option because presets_dropdown is null.");
+				return Error.GlobalVariableIsNull;
+			}
+
+			int actual_option_index = option_index == -1 ? presets_dropdown.options.Count - 1 : option_index;
+			presets_dropdown.options.Insert(actual_option_index, new TMP_Dropdown.OptionData(option_text));
+			if (set_value) {
+				presets_dropdown.SetValueWithoutNotify(actual_option_index);
+				presets_dropdown.RefreshShownValue();
+			}
+			return Error.Success;
+		}
+
 		public static void reset() {
 			instance_match_setup_menu = null!;
 			presets_options = null!;
+			presets_dropdown = null!;
 			current_selected_preset_index = -1;
-			//preset_entries.Clear();
 			if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "UIManager has been reset.");};
 		}
 
@@ -202,8 +223,19 @@ namespace CustomRulesPresets.UI {
 				//Dictionary<GameObject, object> all_children = ChildrenVisualizer.get_all_children_and_components(instance_match_setup_menu.menu);
 				//ChildrenVisualizer.SaveJsonToFile(ChildrenVisualizer.ToJson(all_children), "Debug/MatchSetupMenu_all_children.json");
 
-				presets_options = InsertDropdownAboveItemProbabilities(instance_match_setup_menu.menu, "Presets", "Preset 1");
+				presets_options = InsertDropdownAboveItemProbabilities(instance_match_setup_menu.menu, "Presets");
 				BindCategoryButtons(instance_match_setup_menu.menu, presets_options);
+
+				bool is_first_preset = true;
+				foreach (string preset_name in CustomRulesPresetsManager.custom_rules_presets_data.get_preset_names()) {
+					Error insert_option_error = insert_new_dropdown_option(preset_name, -1, is_first_preset);
+					if (insert_option_error != Error.Success) {
+						Utilities.log_verbose(Utilities.LogType.Error, $"Failed to insert dropdown option for preset '{preset_name}' with error: {insert_option_error.ToString()}");
+					} else {
+						current_selected_preset_index = 0;
+						is_first_preset = false;
+					}
+				}
 			}
 
 			if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "Setting up CustomRulesPresetsManager...");};

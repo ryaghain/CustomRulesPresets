@@ -17,16 +17,18 @@ namespace CustomRulesPresets {
             Debug
         }
 
-        public static void log_verbose(LogType log_type, string message, [CallerMemberName] string member_name = "", [CallerLineNumber] int line_number = 0) {
+        public static void log_verbose(LogType log_type, string message) {
+            string verbose_message = $"{message}\nStack trace: {Environment.StackTrace}";
+
             switch (log_type) {
                 case LogType.Error:
-                    Plugin.Log.LogError($"{member_name} at line {line_number}: {message}");
+                    CustomRulesPresetsPlugin.Log.LogError(verbose_message);
                     break;
                 case LogType.Debug:
-                    Plugin.Log.LogDebug($"{member_name} at line {line_number}: {message}");
+                    CustomRulesPresetsPlugin.Log.LogDebug(verbose_message);
                     break;
                 default:
-                    Plugin.Log.LogInfo(message);
+                    CustomRulesPresetsPlugin.Log.LogError($"Invalid log type {log_type.ToString()} when trying to log message: {verbose_message}");
                     break;
             }
         }
@@ -52,7 +54,7 @@ namespace CustomRulesPresets {
         public static string item_spawn_chance_weights_dict_to_json(Dictionary<MatchSetupRules.ItemPoolId, float> source, bool prettyPrint = true) {
             Dictionary<string, string> normalized_dict = new Dictionary<string, string>();
             foreach (KeyValuePair<MatchSetupRules.ItemPoolId, float> kvp in source) {
-                string key = $"Item Type: {kvp.Key.itemType.ToString()}, Item Index: {Enum.GetName(typeof(CustomRulesPresetsManager.ItemPoolIndex), kvp.Key.itemPoolIndex)}";
+                string key = $"Item Type: {kvp.Key.itemType.ToString()}, Item Index: {kvp.Key.itemPoolIndex}";
                 normalized_dict[key] = kvp.Value.ToString();
             }
         
