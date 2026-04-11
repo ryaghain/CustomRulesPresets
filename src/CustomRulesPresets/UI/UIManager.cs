@@ -9,6 +9,18 @@ using UnityEngine.UI;
 using UnityEngine.Localization.Components;
 
 namespace CustomRulesPresets.UI {
+	public class ActiveStateListener : MonoBehaviour {
+		public Action<bool>? OnActiveChanged;
+
+		private void OnEnable() {
+			OnActiveChanged?.Invoke(true);
+		}
+
+		private void OnDisable() {
+			OnActiveChanged?.Invoke(false);
+		}
+	}
+
 	public class UIManager {
 		public Error construction_error = Error.Success;
 
@@ -20,9 +32,50 @@ namespace CustomRulesPresets.UI {
 		public TMP_Dropdown presets_dropdown = null!;
 		public int current_selected_preset_index = -1;
 
-		public GameObject InsertDropdownAboveItemProbabilities(GameObject matchSetupMenu, string leftLabel) {
+		public void add_listeners_to_category_buttons(GameObject match_setup_menu, GameObject cloned_dropdown) {
+			Transform categories = match_setup_menu.transform.Find("Menu/Background/Rules/Header/Categories");
+
+			if (categories == null) {
+				Utilities.log_verbose(Utilities.LogType.Error, "Could not find Rules/Header/Categories.");
+				return;
+			}
+
+			if (cloned_dropdown == null) {
+				Utilities.log_verbose(Utilities.LogType.Error, "clonedDropdown is null.");
+				return;
+			}
+
+			bool show = false;
+
+			for (int i = 0; i < categories.childCount; i++) {
+				Transform category = categories.GetChild(i);
+
+				Button button = category.GetComponent<Button>();
+				Transform selection = category.Find("Selection");
+				TMP_Text text = category.Find("Text (TMP)")?.GetComponent<TMP_Text>()!;
+
+				if (button == null || text == null)
+					continue;
+
+				string label = text.text.Trim();
+
+				if (label == "Custom") {
+					button.onClick.AddListener(() => {cloned_dropdown.SetActive(true);});
+				} else if (label == "Classic" || label == "Pro Golf") {
+					button.onClick.AddListener(() => {cloned_dropdown.SetActive(false);});
+				}
+
+				if (selection != null && selection.gameObject.activeSelf && text != null && text.text.Trim() == "Custom") {
+                	show = true;
+           		}
+			}
+
+			cloned_dropdown.SetActive(show);
+		}
+
+		public GameObject clone_dropdown_and_add_to_rules_menu(GameObject match_setup_menu, string new_dropdown_text) {
 			// Source widget to clone
-			Transform source = matchSetupMenu.transform.Find("Menu/Background/Match Setup/Columns/Mode/Dropdown Option Variant");
+			Transform source = match_setup_menu.transform.Find("Menu/Background/Match Setup/Columns/Mode/Dropdown Option Variant");
 
 			if (source == null) {
 				Utilities.log_verbose(Utilities.LogType.Error, "Source dropdown option not found.");
@@ -30,7 +83,7 @@ namespace CustomRulesPresets.UI {
 			}
 
 			// Destination layout container in Rules page
-			Transform content = matchSetupMenu.transform.Find("Menu/Background/Rules/Rules/Scroll View/Viewport/Content");
+			Transform content = match_setup_menu.transform.Find("Menu/Background/Rules/Rules/Scroll View/Viewport/Content");
 
 			if (content == null) {
 				Utilities.log_verbose(Utilities.LogType.Error, "Rules content container not found.");
@@ -46,7 +99,7 @@ namespace CustomRulesPresets.UI {
 
 			// Clone and parent into Rules content
 			GameObject clone = GameObject.Instantiate(source.gameObject, content);
-			clone.name = leftLabel + " Dropdown";
+			clone.name = new_dropdown_text + " Dropdown";
 
 			// Place directly above "Item probabilities"
 			clone.transform.SetSiblingIndex(itemProbabilities.GetSiblingIndex());
@@ -63,7 +116,7 @@ namespace CustomRulesPresets.UI {
 				if (localize != null)
 					GameObject.Destroy(localize);
 
-				labelText.text = leftLabel;
+				labelText.text = new_dropdown_text;
 			}
 
 			// Configure dropdown options
@@ -80,7 +133,7 @@ namespace CustomRulesPresets.UI {
 				current_selected_preset_index = 0;
 				presets_dropdown.RefreshShownValue();
 				presets_dropdown.onValueChanged.RemoveAllListeners();
-				presets_dropdown.onValueChanged.AddListener(index => {HandleDropdownSelection(index);});
+				presets_dropdown.onValueChanged.AddListener(index => {handle_selected_dropdown_option(index);});
 			} else {
 				Utilities.log_verbose(Utilities.LogType.Error, "Dropdown component not found in cloned widget.");
 			}
@@ -101,48 +154,7 @@ namespace CustomRulesPresets.UI {
 			return clone;
 		}
 
-		public void BindCategoryButtons(GameObject matchSetupMenu,GameObject clonedDropdown) {
-			Transform categories = matchSetupMenu.transform.Find("Menu/Background/Rules/Header/Categories");
-
-			if (categories == null) {
-				Utilities.log_verbose(Utilities.LogType.Error, "Could not find Rules/Header/Categories.");
-				return;
-			}
-
-			if (clonedDropdown == null) {
-				Utilities.log_verbose(Utilities.LogType.Error, "clonedDropdown is null.");
-				return;
-			}
-
-			bool show = false;
-
-			for (int i = 0; i < categories.childCount; i++) {
-				Transform category = categories.GetChild(i);
-
-				Button button = category.GetComponent<Button>();
-				Transform selection = category.Find("Selection");
-				TMP_Text text = category.Find("Text (TMP)")?.GetComponent<TMP_Text>()!;
-
-				if (button == null || text == null)
-					continue;
-
-				string label = text.text.Trim();
-
-				if (label == "Custom") {
-					button.onClick.AddListener(() => {clonedDropdown.SetActive(true);});
-				} else if (label == "Classic" || label == "Pro Golf") {
-					button.onClick.AddListener(() => {clonedDropdown.SetActive(false);});
-				}
-
-				if (selection != null && selection.gameObject.activeSelf && text != null && text.text.Trim() == "Custom") {
-                	show = true;
-           		}
-			}
-
-			clonedDropdown.SetActive(show);
-		}
-
-		private void HandleDropdownSelection(int selected_index) {
+		private void handle_selected_dropdown_option(int selected_index) {
 			if (selected_index < 0 || selected_index >= presets_dropdown.options.Count)
 				return;
 
@@ -219,13 +231,25 @@ namespace CustomRulesPresets.UI {
 				Utilities.log_verbose(Utilities.LogType.Error, "custom_rules_presets_manager is null");
 			} else {
 				instance_match_setup_menu = new_instance_match_setup_menu;
+
+				GameObject instance_match_setup_menu_ui = instance_match_setup_menu.menu;
+				ActiveStateListener listener = instance_match_setup_menu_ui.GetComponent<ActiveStateListener>();
+				if (listener == null) {listener = instance_match_setup_menu_ui.AddComponent<ActiveStateListener>();}
+
+				listener.OnActiveChanged += isActive => {
+					if (!isActive) {
+						if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"{instance_match_setup_menu_ui.name} was closed, saving currently selected preset...");}
+						Error preset_save_error = custom_rules_presets_manager.preset_save_settings();
+						if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"Preset save on menu close error: {preset_save_error}");}
+					}
+				};
 				
 				if (instance_match_setup_menu.isServer) {
 					//Dictionary<GameObject, object> all_children = ChildrenVisualizer.get_all_children_and_components(instance_match_setup_menu.menu);
 					//ChildrenVisualizer.SaveJsonToFile(ChildrenVisualizer.ToJson(all_children), "Debug/MatchSetupMenu_all_children.json");
 
-					presets_options = InsertDropdownAboveItemProbabilities(instance_match_setup_menu.menu, "Presets");
-					BindCategoryButtons(instance_match_setup_menu.menu, presets_options);
+					presets_options = clone_dropdown_and_add_to_rules_menu(instance_match_setup_menu.menu, "Presets");
+					add_listeners_to_category_buttons(instance_match_setup_menu.menu, presets_options);
 					
 					foreach (string preset_name in custom_rules_presets_manager.custom_rules_presets_data.get_preset_names()) {
 						Error insert_option_error = insert_new_dropdown_option(preset_name, -1, false);

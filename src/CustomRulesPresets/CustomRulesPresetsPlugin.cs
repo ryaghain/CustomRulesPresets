@@ -5,6 +5,7 @@ using HarmonyLib;
 using CustomRulesPresets.UI;
 using CustomRulesPresets.Core;
 using System.Reflection;
+using UnityEngine;
 
 /* 
 TODO:
@@ -53,6 +54,8 @@ namespace CustomRulesPresets {
 
 	[HarmonyPatch]
 	public static class Patches {
+        public static CustomRulesPresetsManager custom_rules_presets_manager = null!;
+
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(MatchSetupMenu), nameof(MatchSetupMenu.OnStartClient))]
 		public static void hook(MatchSetupMenu __instance) {
@@ -60,8 +63,9 @@ namespace CustomRulesPresets {
 
             if (CustomRulesPresetsPlugin.custom_rules_presets_manager == null) {
                 if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "Setting up CustomRulesPresetsManager...");}
-			    CustomRulesPresetsPlugin.custom_rules_presets_manager = new CustomRulesPresetsManager(__instance.rules);
-			    if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"CustomRulesPresetsManager exited setup with error: {CustomRulesPresetsPlugin.custom_rules_presets_manager.construction_error.ToString()}");}
+			    custom_rules_presets_manager = new CustomRulesPresetsManager(__instance.rules);
+                CustomRulesPresetsPlugin.custom_rules_presets_manager = custom_rules_presets_manager;
+			    if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"CustomRulesPresetsManager exited setup with error: {custom_rules_presets_manager.construction_error.ToString()}");}
             }
 
 			if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "Setting up UIManager...");}
@@ -69,13 +73,16 @@ namespace CustomRulesPresets {
             if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"UIManager exited setup with error: {CustomRulesPresetsPlugin.ui_manager.construction_error.ToString()}");}
 		}
 
-        [HarmonyPostfix]
-		[HarmonyPatch(typeof(MatchSetupMenu), nameof(MatchSetupMenu.OnMenuExit))]
-        public static void on_menu_exit() {
-            if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "MatchSetupMenu.OnMenuExit postfix hook called, saving presets...");};
-            Error config_save_error = CustomRulesPresetsPlugin.custom_rules_presets_manager.save_presets_to_file();
-            if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"Finished saving presets with error: {config_save_error.ToString()}");}
-        }
+        //[HarmonyPostfix]
+		//[HarmonyPatch(typeof(GameObject), nameof(MatchSetupMenu.menu.SetActive))]
+        //public static void on_match_setup_menu_ui_set_active(GameObject __instance) {
+        //    if (__instance.activeSelf) {
+        //        if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "MatchSetupMenu.OnMenuExit postfix hook called, saving presets...");};
+        //        custom_rules_presets_manager.preset_save_settings();
+        //        Error config_save_error = custom_rules_presets_manager.save_presets_to_file();
+        //        if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"Finished saving presets with error: {config_save_error.ToString()}");}
+        //    }
+        //}
 
         [HarmonyPostfix]
 		[HarmonyPatch(typeof(MatchSetupMenu), nameof(MatchSetupMenu.OnDestroy))]

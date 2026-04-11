@@ -219,7 +219,9 @@ namespace CustomRulesPresets.Core {
 			return Error.Success;
 		}
 
-		public Error preset_save_settings(string preset_name) {
+		public Error preset_save_settings(string preset_name = "") {
+			if (preset_name == "") {preset_name = custom_rules_presets_data.current_selected_preset_name;}
+
 			if (!custom_rules_presets_data.has_preset(preset_name)) {
 				Utilities.log_verbose(Utilities.LogType.Error, $"Preset '{preset_name}' does not exist.");
 				return Error.ArgumentOutOfRange;
