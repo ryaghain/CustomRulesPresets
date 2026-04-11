@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.IO;
 using System.Linq;
 using Mirror;
 using Newtonsoft.Json;
@@ -7,35 +9,27 @@ using UnityEngine.Assertions;
 using static MatchSetupRules;
 
 namespace CustomRulesPresets.Core {
-	public static class CustomRulesPresetsManager {
-		public static MatchSetupRules instance_match_setup_rules = null!;
+	public class CustomRulesPresetsManager {
+		public Error construction_error = Error.Success;
 
-		public static Error last_preset_get_error = Error.Success;
-		public static string current_selected_preset_name = "";
-		public static CustomRulesPresetsData custom_rules_presets_data = new CustomRulesPresetsData();
+		public string presets_file_path = "";
+		public MatchSetupRules instance_match_setup_rules = null!;
+
+		public Error last_preset_get_error = Error.Success;
+		public CustomRulesPresetsData custom_rules_presets_data = null!;
 		
 		[Serializable]
-		public struct CustomRulesPresetsData {
+		public class CustomRulesPresetsData {
+			private CustomRulesPresetsManager custom_rules_presets_manager => CustomRulesPresetsPlugin.custom_rules_presets_manager;
 			private Dictionary<string, CustomRulesPreset> data;
+			public string current_selected_preset_name = "";
 
 			public int get_preset_count() {return data.Count;}
 
 			public List<string> get_preset_names() {return data.Keys.ToList<string>();}
 
 			public bool has_preset(string preset_name) {
-				return data.ContainsKey(preset_name);
-			}
-
-			public Error preset_create(string preset_name, string preset_data_json) {
-				if (string.IsNullOrEmpty(preset_name)) {
-					Utilities.log_verbose(Utilities.LogType.Error, "Provided argument 'preset_name' is null or empty in preset_create.");
-					return Error.ArgumentNull;
-				} else if (string.IsNullOrEmpty(preset_data_json)) {
-					Utilities.log_verbose(Utilities.LogType.Error, "Provided argument 'preset_data_json' is null or empty in preset_create.");
-					return Error.ArgumentNull;
-				}
-				data.Add(preset_name, new CustomRulesPreset(preset_data_json));
-				return Error.Success;
+				return !string.IsNullOrEmpty(preset_name) && data.ContainsKey(preset_name);
 			}
 
 			public Error preset_create(string preset_name) {
@@ -76,18 +70,18 @@ namespace CustomRulesPresets.Core {
 			public CustomRulesPreset preset_get(string preset_name) {
 				if (!data.ContainsKey(preset_name)) {
 					Utilities.log_verbose(Utilities.LogType.Error, $"Preset '{preset_name}' not found.");
-					last_preset_get_error = Error.ArgumentOutOfRange;
+					custom_rules_presets_manager.last_preset_get_error = Error.ArgumentOutOfRange;
 					return new CustomRulesPreset();
 				}
 
 				CustomRulesPreset preset = data[preset_name];
 				if (preset.rules_settings == null || preset.item_spawn_chance_weights == null) {
 					Utilities.log_verbose(Utilities.LogType.Error, $"Preset '{preset_name}' is not properly initialized, returning empty preset...");
-					last_preset_get_error = Error.GenericFailure;
+					custom_rules_presets_manager.last_preset_get_error = Error.GenericFailure;
 					return new CustomRulesPreset();
 				}
 
-				last_preset_get_error = Error.Success;
+				custom_rules_presets_manager.last_preset_get_error = Error.Success;
 				return preset;
 			}
 
@@ -96,7 +90,7 @@ namespace CustomRulesPresets.Core {
 					Utilities.log_verbose(Utilities.LogType.Error, $"Preset '{preset_name}' not found in CustomRulesPresetsData.preset_set.");
 					return Error.ArgumentOutOfRange;
 				} else if (new_preset.is_empty()) {
-					Utilities.log_verbose(Utilities.LogType.Error, $"Invalid new preset {new_preset.to_json()}.");
+					Utilities.log_verbose(Utilities.LogType.Error, "Invalid new preset, is_empty = true");
 					return Error.ArgumentOutOfRange;
 				}
 
@@ -107,39 +101,17 @@ namespace CustomRulesPresets.Core {
 			public bool preset_is_empty(string preset_name) {
 				if (!data.ContainsKey(preset_name)) {
 					Utilities.log_verbose(Utilities.LogType.Error, $"Preset '{preset_name}' not found in CustomRulesPresetsData.preset_is_empty.");
-					last_preset_get_error = Error.ArgumentOutOfRange;
+					custom_rules_presets_manager.last_preset_get_error = Error.ArgumentOutOfRange;
 					return false;
 				}
 				return preset_get(preset_name).is_empty();
 			}
 
-			public string to_json() {
-				return JsonConvert.SerializeObject(this);
-			}
-
 			public CustomRulesPresetsData() {
+				if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "CustomRulesPresetsData constructed empty, manually creating 'Preset 1'.");}
 				data = new Dictionary<string, CustomRulesPreset>();
-			}
-			
-			public CustomRulesPresetsData(Dictionary<string, CustomRulesPreset> existing_presets) {
-				if (existing_presets == null) {
-					Utilities.log_verbose(Utilities.LogType.Error, "Provided argument 'presets' is null in CustomRulesPresetsData constructor, initializing with empty dict...");
-					data = new Dictionary<string, CustomRulesPreset>();
-				} else {
-					data = existing_presets;
-				}
-			}
-
-			public CustomRulesPresetsData(Dictionary<string, string> existing_presets_json) {
-				if (existing_presets_json == null) {
-					Utilities.log_verbose(Utilities.LogType.Error, "Provided argument 'presets_json' is null in CustomRulesPresetsData constructor, initializing with empty dict...");
-					data = new Dictionary<string, CustomRulesPreset>();
-				} else {
-					data = new Dictionary<string, CustomRulesPreset>();
-					foreach (var kvp in existing_presets_json) {
-						data[kvp.Key] = new CustomRulesPreset(kvp.Value);
-					}
-				}
+				preset_create("Preset 1");
+				current_selected_preset_name = "Preset 1";
 			}
 		}
 
@@ -148,12 +120,21 @@ namespace CustomRulesPresets.Core {
 			public Dictionary<MatchSetupRules.Rule, float> rules_settings;
 			public Dictionary<MatchSetupRules.ItemPoolId, float> item_spawn_chance_weights;
 			
+			
+			public Dictionary<string, object> get_data() {
+				Dictionary<string, object> combined_data = new Dictionary<string, object>();
+				combined_data["rules_settings"] = rules_settings;
+
+				Dictionary<string, float> item_weights_with_string_keys = new Dictionary<string, float>();
+				foreach (KeyValuePair<MatchSetupRules.ItemPoolId, float> item_and_spawn_chance_weight in item_spawn_chance_weights) {
+					item_weights_with_string_keys[$"{item_and_spawn_chance_weight.Key.itemType.ToString()}, {item_and_spawn_chance_weight.Key.itemPoolIndex}"] = item_and_spawn_chance_weight.Value;
+				}
+				combined_data["item_spawn_chance_weights"] = item_weights_with_string_keys;
+
+				return combined_data;
+			}
 			public bool is_empty() {
 				return rules_settings.Count == 0 && item_spawn_chance_weights.Count == 0;
-			}
-
-			public string to_json() {
-				return JsonConvert.SerializeObject(this);
 			}
 
 			public CustomRulesPreset() {
@@ -165,36 +146,44 @@ namespace CustomRulesPresets.Core {
 				rules_settings = source.rules_settings.ToDictionary(entry => entry.Key, entry => entry.Value);
 				item_spawn_chance_weights = source.item_spawn_chance_weights.ToDictionary(entry => entry.Key, entry => entry.Value);
 			}
-
-			public CustomRulesPreset(string json) {
-				if (string.IsNullOrEmpty(json)) {
-					Utilities.log_verbose(Utilities.LogType.Error, "Provided argument 'json' is null or empty in CustomRulesPreset constructor, initializing with empty preset...");
-					rules_settings = new Dictionary<MatchSetupRules.Rule, float>();
-					item_spawn_chance_weights = new Dictionary<MatchSetupRules.ItemPoolId, float>();
-					return;
-				}
-
-				CustomRulesPreset? deserialized_preset = JsonConvert.DeserializeObject<CustomRulesPreset>(json);
-				if (deserialized_preset == null) {
-					Utilities.log_verbose(Utilities.LogType.Error, "Failed to deserialize the provided JSON string in CustomRulesPreset constructor, initializing with empty preset...");
-					rules_settings = new Dictionary<MatchSetupRules.Rule, float>();
-					item_spawn_chance_weights = new Dictionary<MatchSetupRules.ItemPoolId, float>();
-				} else {
-					rules_settings = deserialized_preset.Value.rules_settings ?? new Dictionary<MatchSetupRules.Rule, float>();
-					item_spawn_chance_weights = deserialized_preset.Value.item_spawn_chance_weights ?? new Dictionary<MatchSetupRules.ItemPoolId, float>();
-				}
-			}
 		}
 
-		public static Error preset_load_settings(string preset_name) {
-			if (preset_name == null) {
-				Utilities.log_verbose(Utilities.LogType.Error, "Provided argument 'preset_name' is null in preset_load_settings.");
-				return Error.ArgumentNull;
+		public Error load_presets_from_file() {
+			if (!File.Exists(presets_file_path)){
+				if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"File '{presets_file_path}' does not exist, skipping load.");}
+				return Error.FileDoesNotExist;
 			}
-			 else if (!custom_rules_presets_data.has_preset(preset_name)) {
+
+			BinaryFormatter formatter = new BinaryFormatter();
+			Stream stream = new FileStream(presets_file_path, FileMode.Open, FileAccess.Read, FileShare.Read);
+			CustomRulesPresetsData obj = (CustomRulesPresetsData) formatter.Deserialize(stream);
+			stream.Close();
+
+			if (obj == null) {
+				Utilities.log_verbose(Utilities.LogType.Error, $"Failed to deserialize presets from file: {presets_file_path}");
+				return Error.GenericFailure;
+			} else {
+				custom_rules_presets_data = obj;
+
+				string preset_names = "";
+				foreach (string preset_name in custom_rules_presets_data.get_preset_names()) {preset_names += preset_name + ", ";}
+				preset_names = preset_names.Substring(0, preset_names.Length - ", ".Length);
+				if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"Successfully loaded presets '{preset_names}' from '{presets_file_path}'.");}
+
+				return Error.Success;
+			}
+		}
+		
+		public Error preset_load_settings(string preset_name) {
+			if (preset_name == null) {
+				Utilities.log_verbose(Utilities.LogType.Error, $"Provided argument '{preset_name}' is null in preset_load_settings.");
+				return Error.ArgumentNull;
+
+			} else if (!custom_rules_presets_data.has_preset(preset_name)) {
 				Utilities.log_verbose(Utilities.LogType.Error, $"Preset '{preset_name}' does not exist.");
 				return Error.ArgumentOutOfRange;
-			} else if (preset_name == current_selected_preset_name) {
+
+			} else if (preset_name == custom_rules_presets_data.current_selected_preset_name) {
 				if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"Preset '{preset_name}' is already selected, skipping load.");}
 				return Error.Success;
 			}
@@ -204,17 +193,11 @@ namespace CustomRulesPresets.Core {
 				Utilities.log_verbose(Utilities.LogType.Error, $"Failed to get preset '{preset_name}' in preset_load_settings with error: {last_preset_get_error.ToString()}");
 				return Error.GenericFailure;
 			}
-
-			if (Utilities.do_log_debug) {
-				Utilities.log_verbose(
-					Utilities.LogType.Debug,
-					$"Loading preset '{preset_name}'. rules: {Utilities.rules_dict_to_json(preset.rules_settings)}, item spawn chance weights: {Utilities.item_spawn_chance_weights_dict_to_json(preset.item_spawn_chance_weights)}"
-				);
-			};
 		
 			if (preset.is_empty()) {
 				Utilities.log_verbose(Utilities.LogType.Error, $"Preset '{preset_name}' is empty. Was there a preset save failure?");
 				return Error.GenericFailure;
+
 			} else {
 				Error set_rules_error = set_rules(preset.rules_settings);
 				if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"Loaded preset '{preset_name}'s rules status: {set_rules_error.ToString()}");}
@@ -231,12 +214,12 @@ namespace CustomRulesPresets.Core {
 				}
 			}
 
-			current_selected_preset_name = preset_name;
+			custom_rules_presets_data.current_selected_preset_name = preset_name;
 
 			return Error.Success;
 		}
 
-		public static Error preset_save_settings(string preset_name) {
+		public Error preset_save_settings(string preset_name) {
 			if (!custom_rules_presets_data.has_preset(preset_name)) {
 				Utilities.log_verbose(Utilities.LogType.Error, $"Preset '{preset_name}' does not exist.");
 				return Error.ArgumentOutOfRange;
@@ -260,7 +243,7 @@ namespace CustomRulesPresets.Core {
 				return Error.GenericFailure;
 			}
 			preset.rules_settings = current_rules_settings;
-			if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"Saved rules settings for preset '{preset_name}': {Utilities.rules_dict_to_json(preset.rules_settings)}");};
+			//if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"Saved rules settings for preset '{preset_name}': {Utilities.rules_dict_to_json(preset.rules_settings)}");};
 
 			Dictionary<ItemPoolId, float> current_item_spawn_chance_weights = new Dictionary<ItemPoolId, float>();
 			foreach (KeyValuePair<ItemPoolId, float> id_and_value_kvp in instance_match_setup_rules.spawnChanceWeights) {
@@ -271,7 +254,7 @@ namespace CustomRulesPresets.Core {
 				return Error.GenericFailure;
 			}
 			preset.item_spawn_chance_weights = current_item_spawn_chance_weights;
-			if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"Saved item spawn chance weights for preset '{preset_name}': {Utilities.item_spawn_chance_weights_dict_to_json(preset.item_spawn_chance_weights)}");};
+			//if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"Saved item spawn chance weights for preset '{preset_name}': {Utilities.item_spawn_chance_weights_dict_to_json(preset.item_spawn_chance_weights)}");};
 
 			Error preset_set_error = custom_rules_presets_data.preset_set(preset_name, preset);
 			if (preset_set_error != Error.Success) {
@@ -279,13 +262,26 @@ namespace CustomRulesPresets.Core {
 				return Error.GenericFailure;
 			}
 
-			CustomRulesPresetsPlugin.config_manager.save_presets_to_config(custom_rules_presets_data.to_json()); // this is probably overkill, but I think it's better than trying to save once at game close but the game crashes before the presets can be saved
-
 			return Error.Success;
 		}
 
+		public Error save_presets_to_file() {
+            if (custom_rules_presets_data == null) {
+                Utilities.log_verbose(Utilities.LogType.Error, $"presets_data is null. Cannot save to config.");
+                return Error.ArgumentNull;
+            }
+
+            BinaryFormatter formatter = new BinaryFormatter();
+            Stream stream = new FileStream(presets_file_path, FileMode.Create, FileAccess.Write, FileShare.None);
+            formatter.Serialize(stream, custom_rules_presets_data);
+            stream.Close();
+
+            if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"Presets saved to '{presets_file_path}'");}
+            return Error.Success;
+        }
+
 		// Sets the item spawn chance weights in the MatchSetupRules instance with the provided settings.
-		public static Error set_item_spawn_chance_weights(Dictionary<MatchSetupRules.ItemPoolId, float> item_spawn_chance_weights) {
+		public Error set_item_spawn_chance_weights(Dictionary<MatchSetupRules.ItemPoolId, float> item_spawn_chance_weights) {
 			if (instance_match_setup_rules == null) {
 				Utilities.log_verbose(Utilities.LogType.Error, "CustomRulesPresetsManager is not set up properly.");
 				return Error.GlobalVariableIsNull;
@@ -309,7 +305,7 @@ namespace CustomRulesPresets.Core {
 		}
 
 		// Sets the rules in the MatchSetupRules instance with the provided settings.
-		public static Error set_rules(Dictionary<Rule, float> rules_settings) {
+		public Error set_rules(Dictionary<Rule, float> rules_settings) {
 			if (instance_match_setup_rules == null) {
 				Utilities.log_verbose(Utilities.LogType.Error, "CustomRulesPresetsManager is not set up properly.");
 				return Error.GlobalVariableIsNull;
@@ -342,16 +338,26 @@ namespace CustomRulesPresets.Core {
 		}
 
 		// Stores the provided MatchSetupRules instance and retrieves the necessary FieldInfo and MethodInfo for later use.
-		public static Error setup(MatchSetupRules? new_instance_match_setup_rules) {
+		public CustomRulesPresetsManager(MatchSetupRules? new_instance_match_setup_rules) {
 			if (new_instance_match_setup_rules == null) {
 				Utilities.log_verbose(Utilities.LogType.Error, "Failed to set up CustomRulesPresetsManager: the provided instance is null.");
-				return Error.GenericFailure;
+				construction_error = Error.ArgumentNull;
+
+			} else {
+				instance_match_setup_rules = new_instance_match_setup_rules;
+				presets_file_path = CustomRulesPresetsPlugin.cache_path + "SavedCustomRulesPresets.dat";
+
+				Error load_presets_error = load_presets_from_file();
+				if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"Loading presets from file error: {load_presets_error}");}
+				if (load_presets_error != Error.Success) {
+					custom_rules_presets_data = new CustomRulesPresetsData();
+
+				} else {
+					if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"Loaded presets file has current selected name '{custom_rules_presets_data.current_selected_preset_name}'");}
+				}
+
+				if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "CustomRulesPresetsManager setup done.");}
 			}
-
-			instance_match_setup_rules = new_instance_match_setup_rules;
-
-			if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "CustomRulesPresetsManager setup done. ConfigManager should load any saved presets next.");};
-			return Error.Success;
 		}
 	}
 }

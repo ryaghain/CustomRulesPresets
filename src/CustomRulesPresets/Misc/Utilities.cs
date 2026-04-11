@@ -18,37 +18,17 @@ namespace CustomRulesPresets {
         }
 
         public static void log_verbose(LogType log_type, string message) {
-            string verbose_message = $"{message}\nStack trace: {Environment.StackTrace}";
-
             switch (log_type) {
                 case LogType.Error:
-                    CustomRulesPresetsPlugin.Log.LogError(verbose_message);
+                    CustomRulesPresetsPlugin.Log.LogError($"{message}\nStack trace: {Environment.StackTrace}");
                     break;
                 case LogType.Debug:
-                    CustomRulesPresetsPlugin.Log.LogDebug(verbose_message);
+                    CustomRulesPresetsPlugin.Log.LogDebug(message);
                     break;
                 default:
-                    CustomRulesPresetsPlugin.Log.LogError($"Invalid log type {log_type.ToString()} when trying to log message: {verbose_message}");
+                    CustomRulesPresetsPlugin.Log.LogError($"Invalid log type {log_type.ToString()} when trying to log message: {$"{message}\nStack trace: {Environment.StackTrace}"}");
                     break;
             }
-        }
-
-        public static void SaveJsonToFile(string json, string filePath) {
-            string directory = Path.GetDirectoryName(filePath);
-
-            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-                Directory.CreateDirectory(directory);
-
-            File.WriteAllText(filePath, json);
-        }
-
-        public static string ToJson(Dictionary<object, object> source, bool prettyPrint = true) {
-            object normalized_dict = NormalizeGameObjectDictionary(source);
-        
-            return JsonConvert.SerializeObject(
-                normalized_dict,
-                prettyPrint ? Formatting.Indented : Formatting.None
-            );
         }
 
         public static string item_spawn_chance_weights_dict_to_json(Dictionary<MatchSetupRules.ItemPoolId, float> source, bool prettyPrint = true) {
@@ -191,14 +171,5 @@ namespace CustomRulesPresets {
 			}
 			return children;
 		}
-
-		//public static Dictionary<GameObject, object> recursive_get_children(GameObject parent) {
-		//	Dictionary<GameObject, object> children = new Dictionary<GameObject, object>();
-		//	for (int index = 0; index < parent.transform.childCount; index++) {
-		//		var child = parent.transform.GetChild(index).gameObject;
-		//		children.Add(child, child.transform.childCount > 0 ? recursive_get_children(child) : new Dictionary<GameObject, object>());
-		//	}
-		//	return children;
-		//}
     }
 }
