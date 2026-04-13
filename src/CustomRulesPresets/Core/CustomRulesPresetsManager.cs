@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
 using System.Linq;
-using Mirror;
-using Newtonsoft.Json;
-using UnityEngine.Assertions;
 using static MatchSetupRules;
 
 namespace CustomRulesPresets.Core {
@@ -274,7 +271,7 @@ namespace CustomRulesPresets.Core {
             }
 
             BinaryFormatter formatter = new BinaryFormatter();
-            Stream stream = new FileStream(presets_file_path, FileMode.Create, FileAccess.Write, FileShare.None);
+            FileStream stream = new FileStream(presets_file_path, FileMode.Create, FileAccess.Write, FileShare.None);
             formatter.Serialize(stream, custom_rules_presets_data);
             stream.Close();
 

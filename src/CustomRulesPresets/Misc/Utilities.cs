@@ -5,8 +5,7 @@ using System.Linq;
 using System.IO;
 using Newtonsoft.Json;
 using UnityEngine;
-using System.Runtime.CompilerServices;
-using CustomRulesPresets.Core;
+using System.Text;
 
 namespace CustomRulesPresets {
     public static class Utilities {
@@ -171,5 +170,14 @@ namespace CustomRulesPresets {
 			}
 			return children;
 		}
+
+        public static void save_tree_info_to_disk(GameObject root) {
+            string file_path = CustomRulesPresetsPlugin.cache_path + $"{root.name}_tree.json";
+            FileStream file_stream = new FileStream(file_path, FileMode.Create, FileAccess.Write, FileShare.None);
+            StreamWriter stream_writer = new StreamWriter(file_stream, new UTF8Encoding(false));
+            stream_writer.Write(JsonConvert.SerializeObject(get_all_children_and_components(root), Formatting.Indented));
+            file_stream.Close();
+            log_verbose(LogType.Debug, $"Saved '{root.name}' object tree data to '{file_path}'.");
+        }
     }
 }

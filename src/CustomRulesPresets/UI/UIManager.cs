@@ -7,6 +7,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Localization.Components;
+using Newtonsoft.Json;
 
 namespace CustomRulesPresets.UI {
 	public class ActiveStateListener : MonoBehaviour {
@@ -73,17 +74,17 @@ namespace CustomRulesPresets.UI {
 			presets_row.SetActive(show);
 		}
 
-		public Error clone_dropdown_and_add_to_rules_menu(GameObject match_setup_menu, string new_dropdown_text) {
+		public Error clone_dropdown_and_add_to_rules_menu(string new_dropdown_text) {
 			// Source widget to clone
-			Transform source = match_setup_menu.transform.Find("Menu/Background/Rules/Rules/Scroll View/Viewport/Content/Time Rules (1)/Max Time Based On Par");
+			Transform source_row_transform = instance_match_setup_menu.menu.transform.Find("Menu/Background/Rules/Rules/Scroll View/Viewport/Content/Time Rules (1)/Max Time Based On Par");
 
-			if (source == null) {
+			if (source_row_transform == null) {
 				Utilities.log_verbose(Utilities.LogType.Error, "Source dropdown option not found.");
 				return Error.ArgumentNull;
 			}
 
 			// Destination layout container in Rules page
-			Transform content = match_setup_menu.transform.Find("Menu/Background/Rules/Rules/Scroll View/Viewport/Content");
+			Transform content = instance_match_setup_menu.menu.transform.Find("Menu/Background/Rules/Rules/Scroll View/Viewport/Content");
 
 			if (content == null) {
 				Utilities.log_verbose(Utilities.LogType.Error, "Rules content container not found.");
@@ -98,7 +99,7 @@ namespace CustomRulesPresets.UI {
 			}
 
 			// Clone and parent into Rules content
-			presets_row = GameObject.Instantiate(source.gameObject, content);
+			presets_row = GameObject.Instantiate(source_row_transform.gameObject, content);
 			presets_row.name = new_dropdown_text + " Row";
 
 			// Place directly above "Item probabilities"
@@ -107,15 +108,12 @@ namespace CustomRulesPresets.UI {
 			RectTransform presets_row_rect_transform = presets_row.GetComponent<RectTransform>();
 			presets_row_rect_transform.localScale = Vector3.one;
 			presets_row_rect_transform.localRotation = Quaternion.identity;
+			presets_row_rect_transform.offsetMin = new Vector2(28f, 0f);
+			presets_row_rect_transform.offsetMax = new Vector2(-28f, 0f);
 			
 			// Find the actual dropdown widget inside the cloned row
 			Transform cloned_dropdown_transform = presets_row.transform.Find("Max Time Based On Par Dropdown");
 			cloned_dropdown_transform.name = new_dropdown_text + " Dropdown";
-
-			// Optional: normalize transform for layout-driven UI
-			//RectTransform cloneRt = cloned_dropdown_transform.GetComponent<RectTransform>();
-			//cloneRt.localScale = Vector3.one;
-			//cloneRt.localRotation = Quaternion.identity;
 
 			// Change left label text
 			TMP_Text labelText = cloned_dropdown_transform.transform.Find("Label Text")?.GetComponent<TMP_Text>()!;
@@ -142,21 +140,13 @@ namespace CustomRulesPresets.UI {
 				presets_dropdown.RefreshShownValue();
 				presets_dropdown.onValueChanged.RemoveAllListeners();
 				presets_dropdown.onValueChanged.AddListener(index => {handle_selected_dropdown_option(index);});
+
 			} else {
 				Utilities.log_verbose(Utilities.LogType.Error, "Dropdown component not found in cloned widget.");
 			}
 
-			// Strongly recommended: add a LayoutElement so it sizes like surrounding rows
-			//LayoutElement le = presets_row.GetComponent<LayoutElement>();
-			//if (le == null)
-			//	le = presets_row.AddComponent<LayoutElement>();
-
-			// These values may need tweaking to match nearby dropdown rows
-			//le.minHeight = 44f;
-			//le.preferredHeight = 44f;
-			//le.flexibleHeight = 0f;
-
 			// Force relayout
+			LayoutRebuilder.ForceRebuildLayoutImmediate(presets_row_rect_transform);
 			LayoutRebuilder.ForceRebuildLayoutImmediate(content as RectTransform);
 
 			return Error.Success;
@@ -277,10 +267,13 @@ namespace CustomRulesPresets.UI {
 				};
 				
 				if (instance_match_setup_menu.isServer) {
-					//Dictionary<GameObject, object> all_children = ChildrenVisualizer.get_all_children_and_components(instance_match_setup_menu.menu);
-					//ChildrenVisualizer.SaveJsonToFile(ChildrenVisualizer.ToJson(all_children), "Debug/MatchSetupMenu_all_children.json");
+					ConfigManager config_manager = CustomRulesPresetsPlugin.config_manager;
+					if (config_manager.do_save_tree_to_disk) {
+						Utilities.save_tree_info_to_disk(instance_match_setup_menu.menu);
+						config_manager.do_save_tree_to_disk = false;
+					}
 
-					Error dropdown_cloning_error = clone_dropdown_and_add_to_rules_menu(instance_match_setup_menu.menu, "Presets");
+					Error dropdown_cloning_error = clone_dropdown_and_add_to_rules_menu("Presets");
 					add_listeners_to_category_buttons();
 					reset_styling_to_enabled(presets_row);
 					
