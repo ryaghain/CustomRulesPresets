@@ -28,20 +28,20 @@ namespace CustomRulesPresets.UI {
 
 		private CustomRulesPresetsManager custom_rules_presets_manager => CustomRulesPresetsPlugin.custom_rules_presets_manager;
 		public MatchSetupMenu instance_match_setup_menu = null!;
-		public GameObject presets_options = null!;
+		public GameObject presets_row = null!;
 		public TMP_Dropdown presets_dropdown = null!;
 		public int current_selected_preset_index = -1;
 
-		public void add_listeners_to_category_buttons(GameObject match_setup_menu, GameObject cloned_dropdown) {
-			Transform categories = match_setup_menu.transform.Find("Menu/Background/Rules/Header/Categories");
+		public void add_listeners_to_category_buttons() {
+			Transform categories = instance_match_setup_menu.menu.transform.Find("Menu/Background/Rules/Header/Categories");
 
 			if (categories == null) {
 				Utilities.log_verbose(Utilities.LogType.Error, "Could not find Rules/Header/Categories.");
 				return;
 			}
 
-			if (cloned_dropdown == null) {
-				Utilities.log_verbose(Utilities.LogType.Error, "clonedDropdown is null.");
+			if (presets_row == null) {
+				Utilities.log_verbose(Utilities.LogType.Error, "presets_row is null.");
 				return;
 			}
 
@@ -60,9 +60,9 @@ namespace CustomRulesPresets.UI {
 				string label = text.text.Trim();
 
 				if (label == "Custom") {
-					button.onClick.AddListener(() => {cloned_dropdown.SetActive(true);});
+					button.onClick.AddListener(() => {presets_row.SetActive(true);});
 				} else if (label == "Classic" || label == "Pro Golf") {
-					button.onClick.AddListener(() => {cloned_dropdown.SetActive(false);});
+					button.onClick.AddListener(() => {presets_row.SetActive(false);});
 				}
 
 				if (selection != null && selection.gameObject.activeSelf && text != null && text.text.Trim() == "Custom") {
@@ -70,16 +70,16 @@ namespace CustomRulesPresets.UI {
            		}
 			}
 
-			cloned_dropdown.SetActive(show);
+			presets_row.SetActive(show);
 		}
 
-		public GameObject clone_dropdown_and_add_to_rules_menu(GameObject match_setup_menu, string new_dropdown_text) {
+		public Error clone_dropdown_and_add_to_rules_menu(GameObject match_setup_menu, string new_dropdown_text) {
 			// Source widget to clone
-			Transform source = match_setup_menu.transform.Find("Menu/Background/Match Setup/Columns/Mode/Dropdown Option Variant");
+			Transform source = match_setup_menu.transform.Find("Menu/Background/Rules/Rules/Scroll View/Viewport/Content/Time Rules (1)/Max Time Based On Par");
 
 			if (source == null) {
 				Utilities.log_verbose(Utilities.LogType.Error, "Source dropdown option not found.");
-				return null!;
+				return Error.ArgumentNull;
 			}
 
 			// Destination layout container in Rules page
@@ -87,30 +87,38 @@ namespace CustomRulesPresets.UI {
 
 			if (content == null) {
 				Utilities.log_verbose(Utilities.LogType.Error, "Rules content container not found.");
-				return null!;
+				return Error.ArgumentNull;
 			}
 
 			// Anchor object we want to insert before
 			Transform itemProbabilities = content.Find("Item probabilities");
 			if (itemProbabilities == null) {
 				Utilities.log_verbose(Utilities.LogType.Error, "'Item probabilities' section not found.");
-				return null!;
+				return Error.ArgumentNull;
 			}
 
 			// Clone and parent into Rules content
-			GameObject clone = GameObject.Instantiate(source.gameObject, content);
-			clone.name = new_dropdown_text + " Dropdown";
+			presets_row = GameObject.Instantiate(source.gameObject, content);
+			presets_row.name = new_dropdown_text + " Row";
 
 			// Place directly above "Item probabilities"
-			clone.transform.SetSiblingIndex(itemProbabilities.GetSiblingIndex());
+			presets_row.transform.SetSiblingIndex(itemProbabilities.GetSiblingIndex());
+
+			RectTransform presets_row_rect_transform = presets_row.GetComponent<RectTransform>();
+			presets_row_rect_transform.localScale = Vector3.one;
+			presets_row_rect_transform.localRotation = Quaternion.identity;
+			
+			// Find the actual dropdown widget inside the cloned row
+			Transform cloned_dropdown_transform = presets_row.transform.Find("Max Time Based On Par Dropdown");
+			cloned_dropdown_transform.name = new_dropdown_text + " Dropdown";
 
 			// Optional: normalize transform for layout-driven UI
-			RectTransform cloneRt = clone.GetComponent<RectTransform>();
-			cloneRt.localScale = Vector3.one;
-			cloneRt.localRotation = Quaternion.identity;
+			//RectTransform cloneRt = cloned_dropdown_transform.GetComponent<RectTransform>();
+			//cloneRt.localScale = Vector3.one;
+			//cloneRt.localRotation = Quaternion.identity;
 
 			// Change left label text
-			TMP_Text labelText = clone.transform.Find("Label Text")?.GetComponent<TMP_Text>()!;
+			TMP_Text labelText = cloned_dropdown_transform.transform.Find("Label Text")?.GetComponent<TMP_Text>()!;
 			if (labelText != null) {
 				var localize = labelText.GetComponent<LocalizeStringEvent>();
 				if (localize != null)
@@ -120,7 +128,7 @@ namespace CustomRulesPresets.UI {
 			}
 
 			// Configure dropdown options
-			presets_dropdown = clone.transform.Find("Option Contents/Dropdown")?.GetComponent<TMP_Dropdown>()!;
+			presets_dropdown = cloned_dropdown_transform.Find("Option Contents/Dropdown")?.GetComponent<TMP_Dropdown>()!;
 			if (presets_dropdown != null) {
 				// This custom component is a common reason the list gets rebuilt.
 				var localizeDropdown = presets_dropdown.GetComponent("LocalizeDropdown");
@@ -139,19 +147,19 @@ namespace CustomRulesPresets.UI {
 			}
 
 			// Strongly recommended: add a LayoutElement so it sizes like surrounding rows
-			LayoutElement le = clone.GetComponent<LayoutElement>();
-			if (le == null)
-				le = clone.AddComponent<LayoutElement>();
+			//LayoutElement le = presets_row.GetComponent<LayoutElement>();
+			//if (le == null)
+			//	le = presets_row.AddComponent<LayoutElement>();
 
 			// These values may need tweaking to match nearby dropdown rows
-			le.minHeight = 44f;
-			le.preferredHeight = 44f;
-			le.flexibleHeight = 0f;
+			//le.minHeight = 44f;
+			//le.preferredHeight = 44f;
+			//le.flexibleHeight = 0f;
 
 			// Force relayout
 			LayoutRebuilder.ForceRebuildLayoutImmediate(content as RectTransform);
 
-			return clone;
+			return Error.Success;
 		}
 
 		private void handle_selected_dropdown_option(int selected_index) {
@@ -223,6 +231,30 @@ namespace CustomRulesPresets.UI {
 			return Error.Success;
 		}
 
+		public static void reset_styling_to_enabled(GameObject root) {
+			foreach (CanvasGroup cg in root.GetComponentsInChildren<CanvasGroup>(true)) {
+				cg.alpha = 1f;
+				cg.interactable = true;
+				cg.blocksRaycasts = true;
+			}
+
+			foreach (Selectable selectable in root.GetComponentsInChildren<Selectable>(true)) {
+				selectable.interactable = true;
+			}
+
+			foreach (Graphic g in root.GetComponentsInChildren<Graphic>(true)) {
+				Color c = g.color;
+				c.a = 1f;
+				g.color = c;
+			}
+
+			foreach (TMP_Text text in root.GetComponentsInChildren<TMP_Text>(true)) {
+				Color c = text.color;
+				c.a = 1f;
+				text.color = c;
+			}
+		}
+
 		public UIManager(MatchSetupMenu new_instance_match_setup_menu) {
 			if (new_instance_match_setup_menu == null) {
 				Utilities.log_verbose(Utilities.LogType.Error, "UIManager is not set up properly.");
@@ -248,8 +280,9 @@ namespace CustomRulesPresets.UI {
 					//Dictionary<GameObject, object> all_children = ChildrenVisualizer.get_all_children_and_components(instance_match_setup_menu.menu);
 					//ChildrenVisualizer.SaveJsonToFile(ChildrenVisualizer.ToJson(all_children), "Debug/MatchSetupMenu_all_children.json");
 
-					presets_options = clone_dropdown_and_add_to_rules_menu(instance_match_setup_menu.menu, "Presets");
-					add_listeners_to_category_buttons(instance_match_setup_menu.menu, presets_options);
+					Error dropdown_cloning_error = clone_dropdown_and_add_to_rules_menu(instance_match_setup_menu.menu, "Presets");
+					add_listeners_to_category_buttons();
+					reset_styling_to_enabled(presets_row);
 					
 					foreach (string preset_name in custom_rules_presets_manager.custom_rules_presets_data.get_preset_names()) {
 						Error insert_option_error = insert_new_dropdown_option(preset_name, -1, false);
