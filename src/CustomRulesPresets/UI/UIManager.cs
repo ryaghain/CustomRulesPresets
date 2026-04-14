@@ -74,6 +74,10 @@ namespace CustomRulesPresets.UI {
 			presets_row.SetActive(show);
 		}
 
+		public Error clone_and_insert_ui_elements() {
+			return Error.Success;
+		}
+
 		public Error clone_dropdown_and_add_to_rules_menu(string new_dropdown_text) {
 			// Source widget to clone
 			Transform source_row_transform = instance_match_setup_menu.menu.transform.Find("Menu/Background/Rules/Rules/Scroll View/Viewport/Content/Time Rules (1)/Max Time Based On Par");
