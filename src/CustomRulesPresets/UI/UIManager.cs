@@ -266,13 +266,13 @@ namespace CustomRulesPresets.UI {
 					}
 				};
 				
-				if (instance_match_setup_menu.isServer) {
-					ConfigManager config_manager = CustomRulesPresetsPlugin.config_manager;
-					if (config_manager.do_save_tree_to_disk) {
-						Utilities.save_tree_info_to_disk(instance_match_setup_menu.menu);
-						config_manager.do_save_tree_to_disk = false;
-					}
+				ConfigManager config_manager = CustomRulesPresetsPlugin.config_manager;
+				if (config_manager.do_save_tree_to_disk) {
+					Utilities.save_tree_info_to_disk(instance_match_setup_menu.menu);
+					config_manager.do_save_tree_to_disk = false;
+				}
 
+				if (instance_match_setup_menu.isServer) {
 					Error dropdown_cloning_error = clone_dropdown_and_add_to_rules_menu("Presets");
 					add_listeners_to_category_buttons();
 					reset_styling_to_enabled(presets_row);
