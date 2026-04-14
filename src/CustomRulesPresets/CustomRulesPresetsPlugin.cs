@@ -21,7 +21,8 @@ namespace CustomRulesPresets {
         ArgumentOutOfRange = 3,
         LocalVariableIsNull = 4,
         GlobalVariableIsNull = 5,
-        FileDoesNotExist = 6
+        FileDoesNotExist = 6,
+        ObjectNotFound = 7
     }
 
     [BepInAutoPlugin]

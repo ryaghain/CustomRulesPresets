@@ -185,11 +185,10 @@ namespace CustomRulesPresets {
 
         public static void save_tree_info_to_disk(GameObject root) {
             string file_path = CustomRulesPresetsPlugin.cache_path + $"{root.name}_tree.json";
-            string json_string = JsonConvert.SerializeObject(get_all_children_and_components(root), Formatting.Indented);
 
             FileStream file_stream = new FileStream(file_path, FileMode.Create, FileAccess.Write, FileShare.None);
-            StreamWriter stream_writer = new StreamWriter(file_stream, new UTF8Encoding(false)); // Encoding.UTF8.GetByteCount(json_string)
-            stream_writer.Write(json_string);
+            StreamWriter stream_writer = new StreamWriter(file_stream, new UTF8Encoding(false));
+            stream_writer.Write(JsonConvert.SerializeObject(get_all_children_and_components(root), Formatting.Indented));
             stream_writer.Close();
 
             log_verbose(LogType.Debug, $"Saved '{root.name}' object tree data to '{file_path}'.");

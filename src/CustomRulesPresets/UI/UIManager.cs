@@ -74,7 +74,72 @@ namespace CustomRulesPresets.UI {
 			presets_row.SetActive(show);
 		}
 
-		public Error clone_and_insert_ui_elements() {
+		public Error clone_and_insert_ui_elements() { // objects start at line 11672
+			// Destination layout container in Rules page
+			string content_path = "Menu/Background/Rules/Rules/Scroll View/Viewport/Content";
+			Transform content_transform = instance_match_setup_menu.menu.transform.Find(content_path);
+			if (content_transform == null) {
+				Utilities.log_verbose(Utilities.LogType.Error, $"Unable to find object '{content_path}'.");
+				return Error.ObjectNotFound;
+			}
+
+			// Source for the title header for the presets section
+			string time_header_path = "Time";
+			Transform source_time_header_container_transform = content_transform.Find(time_header_path);
+			if (source_time_header_container_transform == null) {
+				Utilities.log_verbose(Utilities.LogType.Error, $"Unable to find object '{time_header_path}'.");
+				return Error.ObjectNotFound;
+			}
+
+			// Source for the top row of the presets section, consisting of the rename and delete elements
+			string time_rules_top_row_path = "Time Rules";
+			Transform source_time_rules_top_row_container_transform = content_transform.Find(time_rules_top_row_path);
+			if (source_time_rules_top_row_container_transform == null) {
+				Utilities.log_verbose(Utilities.LogType.Error, $"Unable to find object '{time_rules_top_row_path}'.");
+				return Error.ObjectNotFound;
+			}
+
+			// Source for the bottom row of the presets section, consisting of only the presets dropdown
+			string time_rules_bottom_row_path = "Time Rules (1)";
+			Transform source_time_rules_bottom_row_container_transform = content_transform.Find(time_rules_bottom_row_path);
+			if (source_time_rules_bottom_row_container_transform == null) {
+				Utilities.log_verbose(Utilities.LogType.Error, $"Unable to find object '{time_rules_bottom_row_path}'.");
+				return Error.ObjectNotFound;
+			}
+
+			// Source for the delete preset button
+			string reset_container_path = "Reset Container";
+			Transform source_reset_container_transform = content_transform.Find(reset_container_path);
+			if (source_reset_container_transform == null) {
+				Utilities.log_verbose(Utilities.LogType.Error, $"Unable to find object '{reset_container_path}'.");
+				return Error.ObjectNotFound;
+			}
+
+			// Source for the rename preset button
+			string server_name_container_path = "Menu/Background/Match Setup/Header/Server Name";
+			Transform source_server_name_container_transform = instance_match_setup_menu.menu.transform.Find(server_name_container_path);
+			if (source_server_name_container_transform == null) {
+				Utilities.log_verbose(Utilities.LogType.Error, $"Unable to find object '{server_name_container_path}'.");
+				return Error.ObjectNotFound;
+			}
+
+
+
+
+
+
+			
+			//Transform countdown_slider_wrapper = source_time_rules_top_row_transform.Find("Countdown");
+			//if (countdown_slider_wrapper == null) {
+			//	Utilities.log_verbose(Utilities.LogType.Error, "Unable to find object 'Countdown'.");
+			//	return Error.ObjectNotFound;
+			//}
+
+
+
+			//var time_header_localization = source_time_header_transform.GetComponent<LocalizeStringEvent>();
+			//if (time_header_localization != null) {GameObject.Destroy(time_header_localization);}
+
 			return Error.Success;
 		}
 
