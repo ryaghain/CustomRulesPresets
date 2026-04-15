@@ -37,7 +37,7 @@ namespace CustomRulesPresets {
 
         private void Awake() {
             Log = Logger;
-            cache_path = Paths.CachePath;
+            cache_path = Paths.CachePath + "/";
 
             Log.LogInfo("Loading config file...");
             config_manager = new ConfigManager(Config);

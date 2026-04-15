@@ -1,13 +1,9 @@
 ﻿using CustomRulesPresets.Core;
 using System;
-using System.Collections.Generic;
-using System.Data.Common;
-using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Localization.Components;
-using Newtonsoft.Json;
 
 namespace CustomRulesPresets.UI {
 	public class ActiveStateListener : MonoBehaviour {
@@ -29,8 +25,15 @@ namespace CustomRulesPresets.UI {
 
 		private CustomRulesPresetsManager custom_rules_presets_manager => CustomRulesPresetsPlugin.custom_rules_presets_manager;
 		public MatchSetupMenu instance_match_setup_menu = null!;
-		public GameObject presets_row = null!;
+
+		public GameObject presets_header_container = null!;
+		public GameObject presets_top_row_container = null!;
+		public GameObject presets_bottom_row_container = null!;
+
+		public TMP_InputField preset_rename_input_field = null!;
+		
 		public TMP_Dropdown presets_dropdown = null!;
+		public bool presets_is_updating = false;
 		public int current_selected_preset_index = -1;
 
 		public void add_listeners_to_category_buttons() {
@@ -41,8 +44,18 @@ namespace CustomRulesPresets.UI {
 				return;
 			}
 
-			if (presets_row == null) {
-				Utilities.log_verbose(Utilities.LogType.Error, "presets_row is null.");
+			if (presets_header_container == null) {
+				Utilities.log_verbose(Utilities.LogType.Error, "'presets_header_container' is null.");
+				return;
+			}
+
+			if (presets_top_row_container == null) {
+				Utilities.log_verbose(Utilities.LogType.Error, "'presets_top_row_container' is null.");
+				return;
+			}
+
+			if (presets_bottom_row_container == null) {
+				Utilities.log_verbose(Utilities.LogType.Error, "'presets_bottom_row_container' is null.");
 				return;
 			}
 
@@ -61,9 +74,17 @@ namespace CustomRulesPresets.UI {
 				string label = text.text.Trim();
 
 				if (label == "Custom") {
-					button.onClick.AddListener(() => {presets_row.SetActive(true);});
+					button.onClick.AddListener(() => {
+						presets_header_container.SetActive(true);
+						presets_top_row_container.SetActive(true);
+						presets_bottom_row_container.SetActive(true);
+					});
 				} else if (label == "Classic" || label == "Pro Golf") {
-					button.onClick.AddListener(() => {presets_row.SetActive(false);});
+					button.onClick.AddListener(() => {
+						presets_header_container.SetActive(false);
+						presets_top_row_container.SetActive(false);
+						presets_bottom_row_container.SetActive(false);
+					});
 				}
 
 				if (selection != null && selection.gameObject.activeSelf && text != null && text.text.Trim() == "Custom") {
@@ -71,7 +92,9 @@ namespace CustomRulesPresets.UI {
            		}
 			}
 
-			presets_row.SetActive(show);
+			presets_header_container.SetActive(show);
+			presets_top_row_container.SetActive(show);
+			presets_bottom_row_container.SetActive(show);
 		}
 
 		public Error clone_and_insert_ui_elements() { // objects start at line 11672
@@ -91,7 +114,7 @@ namespace CustomRulesPresets.UI {
 				return Error.ObjectNotFound;
 			}
 
-			// Source for the top row of the presets section, consisting of the rename and delete elements
+			// Source for the top row of the presets section
 			string time_rules_top_row_path = "Time Rules";
 			Transform source_time_rules_top_row_container_transform = content_transform.Find(time_rules_top_row_path);
 			if (source_time_rules_top_row_container_transform == null) {
@@ -99,7 +122,7 @@ namespace CustomRulesPresets.UI {
 				return Error.ObjectNotFound;
 			}
 
-			// Source for the bottom row of the presets section, consisting of only the presets dropdown
+			// Source for the bottom row of the presets section
 			string time_rules_bottom_row_path = "Time Rules (1)";
 			Transform source_time_rules_bottom_row_container_transform = content_transform.Find(time_rules_bottom_row_path);
 			if (source_time_rules_bottom_row_container_transform == null) {
@@ -123,107 +146,136 @@ namespace CustomRulesPresets.UI {
 				return Error.ObjectNotFound;
 			}
 
+			// Clone and setup the presets header
+			presets_header_container = GameObject.Instantiate(source_time_header_container_transform.gameObject, content_transform);
+			reset_styling_to_enabled(presets_header_container);
+			presets_header_container.name = "PresetsHeaderContainer";
+			var presets_header_container_localization = presets_header_container.GetComponent<LocalizeStringEvent>();
+			if (presets_header_container_localization != null) {GameObject.Destroy(presets_header_container_localization);}
+			TMP_Text presets_header_container_text = presets_header_container.GetComponent<TMP_Text>()!;
+			if (presets_header_container_text == null) {
+				Utilities.log_verbose(Utilities.LogType.Error, $"Unable to find the text component of '{presets_header_container}'.");
+				return Error.ObjectNotFound;
+			}
+			presets_header_container_text.text = "Presets";
 
+			// Clone and setup the top row
+			presets_top_row_container = GameObject.Instantiate(source_time_rules_top_row_container_transform.gameObject, content_transform);
+			presets_top_row_container.name = "PresetsTopRowContainer";
+			for (int child_index = 0; child_index < presets_top_row_container.transform.childCount; child_index++) {
+				GameObject.Destroy(presets_top_row_container.transform.GetChild(child_index));
+			}
 
+			// Clone and setup the preset rename field
+			GameObject preset_rename_container = GameObject.Instantiate(source_server_name_container_transform.gameObject, presets_top_row_container.transform);
+			reset_styling_to_enabled(preset_rename_container);
+			preset_rename_container.name = "PresetRenameContainer";
+			preset_rename_input_field = preset_rename_container.GetComponent<TMP_InputField>();
+			preset_rename_input_field.name = "PresetRenameInputField";
+			preset_rename_input_field.onValueChanged.RemoveAllListeners();
+        	preset_rename_input_field.onEndEdit.RemoveAllListeners();
+        	preset_rename_input_field.onSubmit.RemoveAllListeners();
+        	preset_rename_input_field.onSelect.RemoveAllListeners();
+        	preset_rename_input_field.onDeselect.RemoveAllListeners();
+			preset_rename_input_field.SetTextWithoutNotify("Preset 1");
+			preset_rename_input_field.onSubmit.AddListener(text => {handle_preset_renaming(text);});
 
+			// Clone and setup the preset delete button
+			GameObject preset_delete_container = GameObject.Instantiate(source_reset_container_transform.gameObject, presets_top_row_container.transform);
+			reset_styling_to_enabled(preset_delete_container);
+			preset_delete_container.name = "PresetDeleteContainer";
+			Transform preset_delete_button_container_transform = preset_delete_container.transform.Find("Option Container/Reset Probabilites");
+			preset_delete_button_container_transform.gameObject.name = "PresetDeleteButtonContainer";
+			Button preset_delete_button = preset_delete_button_container_transform.gameObject.GetComponent<Button>();
+			preset_delete_button.onClick.RemoveAllListeners();
+			preset_delete_button.onClick.AddListener(() => {handle_preset_delete();});
+			GameObject preset_delete_button_text_object = preset_delete_button_container_transform.Find("Text").gameObject;
+			LocalizeStringEvent preset_delete_button_text_localization = preset_delete_button_text_object.GetComponent<LocalizeStringEvent>();
+			if (preset_delete_button_text_localization != null) {GameObject.Destroy(preset_delete_button_text_localization);}
+			TextMeshProUGUI preset_delete_button_text = preset_delete_button_text_object.GetComponent<TextMeshProUGUI>();
+			preset_delete_button_text.text = "Delete Preset";
 
-
+			// Clone and setup the bottom row
+			presets_bottom_row_container = GameObject.Instantiate(source_time_rules_bottom_row_container_transform.gameObject, content_transform);
+			presets_bottom_row_container.name = "PresetsBottomRowContainer";
 			
-			//Transform countdown_slider_wrapper = source_time_rules_top_row_transform.Find("Countdown");
-			//if (countdown_slider_wrapper == null) {
-			//	Utilities.log_verbose(Utilities.LogType.Error, "Unable to find object 'Countdown'.");
-			//	return Error.ObjectNotFound;
-			//}
+			// Setup the preset dropdown
+			Transform presets_dropdown_container_transform = presets_bottom_row_container.transform.Find("Max Time Based On Par");
+			reset_styling_to_enabled(presets_dropdown_container_transform.gameObject);
+			presets_dropdown_container_transform.gameObject.name = "PresetsDropdown";
+			Transform presets_dropdown_subcontainer_transform = presets_dropdown_container_transform.Find("Max Time Based On Par Dropdown/Option Contents/Dropdown");
+			presets_dropdown = presets_dropdown_subcontainer_transform.GetComponent<TMP_Dropdown>();
+			GameObject.Destroy(presets_dropdown_subcontainer_transform.GetComponent("LocalizeDropdown"));
+			presets_dropdown.options.Clear();
+			presets_dropdown.options.Add(new TMP_Dropdown.OptionData(NEW_PRESET_OPTION_TEXT));
+			presets_dropdown.value = 0;
+			current_selected_preset_index = 0;
+			presets_dropdown.RefreshShownValue();
+			presets_dropdown.onValueChanged.RemoveAllListeners();
+			presets_dropdown.onValueChanged.AddListener(index => {handle_selected_dropdown_option(index);});
+			TMP_Text presets_dropdown_label_text = presets_dropdown_container_transform.Find("Max Time Based On Par Dropdown/Label Text")?.GetComponent<TMP_Text>()!;
+			var localize = presets_dropdown_label_text.GetComponent<LocalizeStringEvent>();
+			if (localize != null) {GameObject.Destroy(localize);}
+			presets_dropdown_label_text.text = "Change Preset";
 
+			// Force relayout
+			LayoutRebuilder.ForceRebuildLayoutImmediate(presets_header_container.GetComponent<RectTransform>());
+			
+			LayoutRebuilder.ForceRebuildLayoutImmediate(preset_rename_container.GetComponent<RectTransform>());
+			LayoutRebuilder.ForceRebuildLayoutImmediate(preset_delete_container.GetComponent<RectTransform>());
+			LayoutRebuilder.ForceRebuildLayoutImmediate(presets_top_row_container.GetComponent<RectTransform>());
 
+			LayoutRebuilder.ForceRebuildLayoutImmediate(presets_dropdown_container_transform.GetComponent<RectTransform>());
+			LayoutRebuilder.ForceRebuildLayoutImmediate(presets_bottom_row_container.GetComponent<RectTransform>());
 
-			//var time_header_localization = source_time_header_transform.GetComponent<LocalizeStringEvent>();
-			//if (time_header_localization != null) {GameObject.Destroy(time_header_localization);}
-
+			LayoutRebuilder.ForceRebuildLayoutImmediate(content_transform.GetComponent<RectTransform>());
+			
+			add_listeners_to_category_buttons();
 			return Error.Success;
 		}
 
-		public Error clone_dropdown_and_add_to_rules_menu(string new_dropdown_text) {
-			// Source widget to clone
-			Transform source_row_transform = instance_match_setup_menu.menu.transform.Find("Menu/Background/Rules/Rules/Scroll View/Viewport/Content/Time Rules (1)/Max Time Based On Par");
-
-			if (source_row_transform == null) {
-				Utilities.log_verbose(Utilities.LogType.Error, "Source dropdown option not found.");
-				return Error.ArgumentNull;
+		private void handle_preset_delete() {
+			if (current_selected_preset_index == presets_dropdown.options.Count - 1) {
+				if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "Preset delete button click detected, but 'New Preset' is selected.");}
+				return;
 			}
 
-			// Destination layout container in Rules page
-			Transform content = instance_match_setup_menu.menu.transform.Find("Menu/Background/Rules/Rules/Scroll View/Viewport/Content");
-
-			if (content == null) {
-				Utilities.log_verbose(Utilities.LogType.Error, "Rules content container not found.");
-				return Error.ArgumentNull;
+			if (presets_dropdown.options.Count < 3) {
+				if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "Preset delete button click detected, but no preset to switch to after deleting exists. Create another preset first.");}
+				return;
 			}
 
-			// Anchor object we want to insert before
-			Transform itemProbabilities = content.Find("Item probabilities");
-			if (itemProbabilities == null) {
-				Utilities.log_verbose(Utilities.LogType.Error, "'Item probabilities' section not found.");
-				return Error.ArgumentNull;
+			if (presets_is_updating) {
+				if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "Preset delete button click detected, but presets are still updating.");}
+				return;
 			}
 
-			// Clone and parent into Rules content
-			presets_row = GameObject.Instantiate(source_row_transform.gameObject, content);
-			presets_row.name = new_dropdown_text + " Row";
-
-			// Place directly above "Item probabilities"
-			presets_row.transform.SetSiblingIndex(itemProbabilities.GetSiblingIndex());
-
-			RectTransform presets_row_rect_transform = presets_row.GetComponent<RectTransform>();
-			presets_row_rect_transform.localScale = Vector3.one;
-			presets_row_rect_transform.localRotation = Quaternion.identity;
-			presets_row_rect_transform.offsetMin = new Vector2(28f, 0f);
-			presets_row_rect_transform.offsetMax = new Vector2(-28f, 0f);
-			
-			// Find the actual dropdown widget inside the cloned row
-			Transform cloned_dropdown_transform = presets_row.transform.Find("Max Time Based On Par Dropdown");
-			cloned_dropdown_transform.name = new_dropdown_text + " Dropdown";
-
-			// Change left label text
-			TMP_Text labelText = cloned_dropdown_transform.transform.Find("Label Text")?.GetComponent<TMP_Text>()!;
-			if (labelText != null) {
-				var localize = labelText.GetComponent<LocalizeStringEvent>();
-				if (localize != null)
-					GameObject.Destroy(localize);
-
-				labelText.text = new_dropdown_text;
+			Error delete_preset_error = custom_rules_presets_manager.custom_rules_presets_data.preset_delete(presets_dropdown.options[current_selected_preset_index].text);
+			if (delete_preset_error != Error.Success) {
+				Utilities.log_verbose(Utilities.LogType.Error, $"Unable to delete preset at dropdown index '{current_selected_preset_index}'.");
+				return;
 			}
 
-			// Configure dropdown options
-			presets_dropdown = cloned_dropdown_transform.Find("Option Contents/Dropdown")?.GetComponent<TMP_Dropdown>()!;
-			if (presets_dropdown != null) {
-				// This custom component is a common reason the list gets rebuilt.
-				var localizeDropdown = presets_dropdown.GetComponent("LocalizeDropdown");
-				if (localizeDropdown != null)
-					GameObject.Destroy(localizeDropdown);
-
-				presets_dropdown.options.Clear();
-				presets_dropdown.options.Add(new TMP_Dropdown.OptionData(NEW_PRESET_OPTION_TEXT));
-				presets_dropdown.value = 0;
-				current_selected_preset_index = 0;
-				presets_dropdown.RefreshShownValue();
-				presets_dropdown.onValueChanged.RemoveAllListeners();
-				presets_dropdown.onValueChanged.AddListener(index => {handle_selected_dropdown_option(index);});
-
-			} else {
-				Utilities.log_verbose(Utilities.LogType.Error, "Dropdown component not found in cloned widget.");
+			presets_dropdown.options.RemoveAt(current_selected_preset_index);
+			presets_dropdown.SetValueWithoutNotify(current_selected_preset_index > 0 ? current_selected_preset_index - 1 : current_selected_preset_index + 1);
+		}
+		
+		private void handle_preset_renaming(string new_preset_name) {
+			if (string.IsNullOrEmpty(new_preset_name)) {
+				Utilities.log_verbose(Utilities.LogType.Error, "Provided preset name is null or empty.");
+				return;
 			}
-
-			// Force relayout
-			LayoutRebuilder.ForceRebuildLayoutImmediate(presets_row_rect_transform);
-			LayoutRebuilder.ForceRebuildLayoutImmediate(content as RectTransform);
-
-			return Error.Success;
+			// TODO
 		}
 
 		private void handle_selected_dropdown_option(int selected_index) {
-			if (selected_index < 0 || selected_index >= presets_dropdown.options.Count)
+			presets_is_updating = true;
+
+			if (selected_index < 0 || selected_index >= presets_dropdown.options.Count) {
+				presets_is_updating = false;
 				return;
+			}
+			
 
 			string current_selected_preset_name = presets_dropdown.options[current_selected_preset_index].text;
 			int new_preset_index = selected_index;
@@ -234,6 +286,7 @@ namespace CustomRulesPresets.UI {
 				Utilities.log_verbose(Utilities.LogType.Error, $"Failed to save the current preset {current_selected_preset_name} before switching. Restoring previous dropdown selection...");
 				presets_dropdown.SetValueWithoutNotify(current_selected_preset_index);
 				presets_dropdown.RefreshShownValue();
+				presets_is_updating = false;
 				return;
 			}
 			
@@ -252,6 +305,7 @@ namespace CustomRulesPresets.UI {
 					insert_new_dropdown_option(new_preset_name, new_preset_index);
 				}
 
+				presets_is_updating = false;
 				return;
 			}
 
@@ -259,6 +313,7 @@ namespace CustomRulesPresets.UI {
 				Utilities.log_verbose(Utilities.LogType.Error, $"Selected preset '{new_preset_name}' not found in presets data.");
 				presets_dropdown.SetValueWithoutNotify(current_selected_preset_index);
 				presets_dropdown.RefreshShownValue();
+				presets_is_updating = false;
 				return;
 			}
 
@@ -267,12 +322,15 @@ namespace CustomRulesPresets.UI {
 				Utilities.log_verbose(Utilities.LogType.Error, $"Failed to load preset {new_preset_name}. Restoring previous dropdown selection...");
 				presets_dropdown.SetValueWithoutNotify(current_selected_preset_index);
 				presets_dropdown.RefreshShownValue();
+				presets_is_updating = false;
 				return;
 			}
 
 			Error save_presets_to_config_error = custom_rules_presets_manager.save_presets_to_file();
 
 			current_selected_preset_index = new_preset_index;
+			preset_rename_input_field.SetTextWithoutNotify(presets_dropdown.options[current_selected_preset_index].text);
+			presets_is_updating = false;
 		}
 
 		public Error insert_new_dropdown_option(string option_text, int option_index = -1, bool set_value = true) {
@@ -342,9 +400,7 @@ namespace CustomRulesPresets.UI {
 				}
 
 				if (instance_match_setup_menu.isServer) {
-					Error dropdown_cloning_error = clone_dropdown_and_add_to_rules_menu("Presets");
-					add_listeners_to_category_buttons();
-					reset_styling_to_enabled(presets_row);
+					Error cloning_error = clone_and_insert_ui_elements();
 					
 					foreach (string preset_name in custom_rules_presets_manager.custom_rules_presets_data.get_preset_names()) {
 						Error insert_option_error = insert_new_dropdown_option(preset_name, -1, false);
@@ -387,6 +443,7 @@ namespace CustomRulesPresets.UI {
 
 					presets_dropdown.SetValueWithoutNotify(current_selected_preset_index);
 					presets_dropdown.RefreshShownValue();
+					preset_rename_input_field.SetTextWithoutNotify(presets_dropdown.options[current_selected_preset_index].text);
 				}
 
 			}
