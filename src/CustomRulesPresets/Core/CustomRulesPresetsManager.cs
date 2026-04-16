@@ -38,13 +38,21 @@ namespace CustomRulesPresets.Core {
 				return Error.Success;
 			}
 
-			public Error preset_delete(string preset_name) {
+			public Error preset_delete(string preset_name, string new_preset_name_if_current_is_deleted) {
 				if (!data.ContainsKey(preset_name)) {
-					Utilities.log_verbose(Utilities.LogType.Error, $"Preset '{preset_name}' not found in CustomRulesPresetsData.preset_delete.");
+					Utilities.log_verbose(Utilities.LogType.Error, $"Preset '{preset_name}' not found.");
+					return Error.ArgumentOutOfRange;
+				}
+
+				if (!data.ContainsKey(new_preset_name_if_current_is_deleted)) {
+					Utilities.log_verbose(Utilities.LogType.Error, $"Preset '{new_preset_name_if_current_is_deleted}' not found.");
 					return Error.ArgumentOutOfRange;
 				}
 
 				data.Remove(preset_name);
+				if (current_selected_preset_name == preset_name) {
+					current_selected_preset_name = new_preset_name_if_current_is_deleted;
+				}
 				return Error.Success;
 			}
 
@@ -82,9 +90,43 @@ namespace CustomRulesPresets.Core {
 				return preset;
 			}
 
+			public bool preset_is_empty(string preset_name) {
+				if (!data.ContainsKey(preset_name)) {
+					Utilities.log_verbose(Utilities.LogType.Error, $"Preset '{preset_name}' not found.");
+					custom_rules_presets_manager.last_preset_get_error = Error.ArgumentOutOfRange;
+					return false;
+				}
+				return preset_get(preset_name).is_empty();
+			}
+
+			public Error preset_rename(string preset_name, string new_preset_name) {
+				if (!data.ContainsKey(preset_name)) {
+					Utilities.log_verbose(Utilities.LogType.Error, $"Preset '{preset_name}' not found.");
+					return Error.ArgumentOutOfRange;
+				}
+
+				if (string.IsNullOrEmpty(new_preset_name)) {
+					Utilities.log_verbose(Utilities.LogType.Error, "Provided argument 'new_preset_name' is null or empty.");
+					return Error.ArgumentNull;
+				}
+
+				if (data.ContainsKey(new_preset_name)) {
+					Utilities.log_verbose(Utilities.LogType.Error, $"A preset with the name '{new_preset_name}' already exists.");
+					return Error.GenericFailure;
+				}
+
+				CustomRulesPreset preset = data[preset_name];
+				data.Remove(preset_name);
+				data.Add(new_preset_name, preset);
+				if (current_selected_preset_name == preset_name) {
+					current_selected_preset_name = new_preset_name;
+				}
+				return Error.Success;
+			}
+
 			public Error preset_set(string preset_name, CustomRulesPreset new_preset) {
 				if (!data.ContainsKey(preset_name)) {
-					Utilities.log_verbose(Utilities.LogType.Error, $"Preset '{preset_name}' not found in CustomRulesPresetsData.preset_set.");
+					Utilities.log_verbose(Utilities.LogType.Error, $"Preset '{preset_name}' not found.");
 					return Error.ArgumentOutOfRange;
 				} else if (new_preset.is_empty()) {
 					Utilities.log_verbose(Utilities.LogType.Error, "Invalid new preset, is_empty = true");
@@ -93,15 +135,6 @@ namespace CustomRulesPresets.Core {
 
 				data[preset_name] = new_preset;
 				return Error.Success;
-			}
-
-			public bool preset_is_empty(string preset_name) {
-				if (!data.ContainsKey(preset_name)) {
-					Utilities.log_verbose(Utilities.LogType.Error, $"Preset '{preset_name}' not found in CustomRulesPresetsData.preset_is_empty.");
-					custom_rules_presets_manager.last_preset_get_error = Error.ArgumentOutOfRange;
-					return false;
-				}
-				return preset_get(preset_name).is_empty();
 			}
 
 			public CustomRulesPresetsData() {

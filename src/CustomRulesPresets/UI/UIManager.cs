@@ -37,10 +37,16 @@ namespace CustomRulesPresets.UI {
 		public int current_selected_preset_index = -1;
 
 		public void add_listeners_to_category_buttons() {
-			Transform categories = instance_match_setup_menu.menu.transform.Find("Menu/Background/Rules/Header/Categories");
+			if (instance_match_setup_menu == null) {
+				Utilities.log_verbose(Utilities.LogType.Error, "Cannot add listeners to category buttons because 'instance_match_setup_menu' is null.");
+				return;
+			}
 
-			if (categories == null) {
-				Utilities.log_verbose(Utilities.LogType.Error, "Could not find Rules/Header/Categories.");
+			string vanilla_presets_path = "Menu/Background/Rules/Header/Presets";
+			Transform vanilla_presets = instance_match_setup_menu.menu.transform.Find(vanilla_presets_path);
+
+			if (vanilla_presets == null) {
+				Utilities.log_verbose(Utilities.LogType.Error, $"Could not find '{vanilla_presets_path}'.");
 				return;
 			}
 
@@ -61,12 +67,12 @@ namespace CustomRulesPresets.UI {
 
 			bool show = false;
 
-			for (int i = 0; i < categories.childCount; i++) {
-				Transform category = categories.GetChild(i);
+			for (int i = 0; i < vanilla_presets.childCount; i++) {
+				Transform vanilla_preset = vanilla_presets.GetChild(i);
 
-				Button button = category.GetComponent<Button>();
-				Transform selection = category.Find("Selection");
-				TMP_Text text = category.Find("Text (TMP)")?.GetComponent<TMP_Text>()!;
+				Button button = vanilla_preset.GetComponent<Button>();
+				Transform selection = vanilla_preset.Find("Selection");
+				TMP_Text text = vanilla_preset.Find("Text (TMP)")?.GetComponent<TMP_Text>()!;
 
 				if (button == null || text == null)
 					continue;
@@ -148,6 +154,7 @@ namespace CustomRulesPresets.UI {
 
 			// Clone and setup the presets header
 			presets_header_container = GameObject.Instantiate(source_time_header_container_transform.gameObject, content_transform);
+			presets_header_container.transform.SetSiblingIndex(0);
 			reset_styling_to_enabled(presets_header_container);
 			presets_header_container.name = "PresetsHeaderContainer";
 			var presets_header_container_localization = presets_header_container.GetComponent<LocalizeStringEvent>();
@@ -161,9 +168,10 @@ namespace CustomRulesPresets.UI {
 
 			// Clone and setup the top row
 			presets_top_row_container = GameObject.Instantiate(source_time_rules_top_row_container_transform.gameObject, content_transform);
+			presets_top_row_container.transform.SetSiblingIndex(1);
 			presets_top_row_container.name = "PresetsTopRowContainer";
-			for (int child_index = 0; child_index < presets_top_row_container.transform.childCount; child_index++) {
-				GameObject.Destroy(presets_top_row_container.transform.GetChild(child_index));
+			for (int child_index = presets_top_row_container.transform.childCount - 1; child_index >= 0; child_index--) {
+    			GameObject.Destroy(presets_top_row_container.transform.GetChild(child_index).gameObject);
 			}
 
 			// Clone and setup the preset rename field
@@ -197,6 +205,7 @@ namespace CustomRulesPresets.UI {
 
 			// Clone and setup the bottom row
 			presets_bottom_row_container = GameObject.Instantiate(source_time_rules_bottom_row_container_transform.gameObject, content_transform);
+			presets_bottom_row_container.transform.SetSiblingIndex(2);
 			presets_bottom_row_container.name = "PresetsBottomRowContainer";
 			
 			// Setup the preset dropdown
@@ -250,14 +259,17 @@ namespace CustomRulesPresets.UI {
 				return;
 			}
 
-			Error delete_preset_error = custom_rules_presets_manager.custom_rules_presets_data.preset_delete(presets_dropdown.options[current_selected_preset_index].text);
+			int new_preset_index = current_selected_preset_index > 0 ? current_selected_preset_index - 1 : current_selected_preset_index + 1;
+			Error delete_preset_error = custom_rules_presets_manager.custom_rules_presets_data.preset_delete(presets_dropdown.options[current_selected_preset_index].text, presets_dropdown.options[new_preset_index].text);
 			if (delete_preset_error != Error.Success) {
 				Utilities.log_verbose(Utilities.LogType.Error, $"Unable to delete preset at dropdown index '{current_selected_preset_index}'.");
 				return;
 			}
 
 			presets_dropdown.options.RemoveAt(current_selected_preset_index);
-			presets_dropdown.SetValueWithoutNotify(current_selected_preset_index > 0 ? current_selected_preset_index - 1 : current_selected_preset_index + 1);
+			current_selected_preset_index = new_preset_index;
+			presets_dropdown.SetValueWithoutNotify(current_selected_preset_index);
+			preset_rename_input_field.SetTextWithoutNotify(presets_dropdown.options[current_selected_preset_index].text);
 		}
 		
 		private void handle_preset_renaming(string new_preset_name) {
@@ -265,7 +277,17 @@ namespace CustomRulesPresets.UI {
 				Utilities.log_verbose(Utilities.LogType.Error, "Provided preset name is null or empty.");
 				return;
 			}
-			// TODO
+
+			Error preset_rename_error = custom_rules_presets_manager.custom_rules_presets_data.preset_rename(presets_dropdown.options[current_selected_preset_index].text, new_preset_name);
+			if (preset_rename_error != Error.Success) {
+				Utilities.log_verbose(Utilities.LogType.Error, $"Unable to rename preset '{presets_dropdown.options[current_selected_preset_index].text}' to '{new_preset_name}'.");
+				preset_rename_input_field.SetTextWithoutNotify(presets_dropdown.options[current_selected_preset_index].text);
+				return;
+
+			} else {
+				presets_dropdown.options[current_selected_preset_index].text = new_preset_name;
+				presets_dropdown.RefreshShownValue();
+			}
 		}
 
 		private void handle_selected_dropdown_option(int selected_index) {
@@ -348,7 +370,7 @@ namespace CustomRulesPresets.UI {
 			return Error.Success;
 		}
 
-		public static void reset_styling_to_enabled(GameObject root) {
+		public void reset_styling_to_enabled(GameObject root) {
 			foreach (CanvasGroup cg in root.GetComponentsInChildren<CanvasGroup>(true)) {
 				cg.alpha = 1f;
 				cg.interactable = true;
@@ -370,6 +392,12 @@ namespace CustomRulesPresets.UI {
 				c.a = 1f;
 				text.color = c;
 			}
+		}
+
+		public void update_shown_values() {
+			presets_dropdown.SetValueWithoutNotify(current_selected_preset_index);
+			presets_dropdown.RefreshShownValue();
+			preset_rename_input_field.SetTextWithoutNotify(presets_dropdown.options[current_selected_preset_index].text);
 		}
 
 		public UIManager(MatchSetupMenu new_instance_match_setup_menu) {
