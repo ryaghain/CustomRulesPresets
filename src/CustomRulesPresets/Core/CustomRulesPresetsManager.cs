@@ -40,19 +40,18 @@ namespace CustomRulesPresets.Core {
 
 			public Error preset_delete(string preset_name, string new_preset_name_if_current_is_deleted) {
 				if (!data.ContainsKey(preset_name)) {
-					Utilities.log_verbose(Utilities.LogType.Error, $"Preset '{preset_name}' not found.");
+					Utilities.log_verbose(Utilities.LogType.Error, $"Preset to be deleted '{preset_name}' not found.");
 					return Error.ArgumentOutOfRange;
 				}
 
 				if (!data.ContainsKey(new_preset_name_if_current_is_deleted)) {
-					Utilities.log_verbose(Utilities.LogType.Error, $"Preset '{new_preset_name_if_current_is_deleted}' not found.");
+					Utilities.log_verbose(Utilities.LogType.Error, $"Preset to switch to after deleting '{new_preset_name_if_current_is_deleted}' not found.");
 					return Error.ArgumentOutOfRange;
 				}
 
 				data.Remove(preset_name);
-				if (current_selected_preset_name == preset_name) {
-					current_selected_preset_name = new_preset_name_if_current_is_deleted;
-				}
+				custom_rules_presets_manager.preset_load_settings(new_preset_name_if_current_is_deleted);
+
 				return Error.Success;
 			}
 
@@ -163,6 +162,7 @@ namespace CustomRulesPresets.Core {
 
 				return combined_data;
 			}
+
 			public bool is_empty() {
 				return rules_settings.Count == 0 && item_spawn_chance_weights.Count == 0;
 			}
@@ -369,7 +369,6 @@ namespace CustomRulesPresets.Core {
 			return Error.Success;
 		}
 
-		// Stores the provided MatchSetupRules instance and retrieves the necessary FieldInfo and MethodInfo for later use.
 		public CustomRulesPresetsManager(MatchSetupRules? new_instance_match_setup_rules) {
 			if (new_instance_match_setup_rules == null) {
 				Utilities.log_verbose(Utilities.LogType.Error, "Failed to set up CustomRulesPresetsManager: the provided instance is null.");

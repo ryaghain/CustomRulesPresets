@@ -4,6 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Localization.Components;
+using System.Collections.Generic;
 
 namespace CustomRulesPresets.UI {
 	public class ActiveStateListener : MonoBehaviour {
@@ -203,6 +204,37 @@ namespace CustomRulesPresets.UI {
 			TextMeshProUGUI preset_delete_button_text = preset_delete_button_text_object.GetComponent<TextMeshProUGUI>();
 			preset_delete_button_text.text = "Delete Preset";
 
+
+			// Tried fixing the streching issue of the rename field with this next part but it didn't work so whatever it looks fine as-is.
+
+			// Now that both the preset rename field and preset delete button are setup, we can copy the styling from the latter to the former.
+			//RectTransform preset_rename_rect_transform = preset_rename_container.GetComponent<RectTransform>();
+			//RectTransform preset_delete_rect_transform = preset_delete_container.GetComponent<RectTransform>();
+			//preset_rename_rect_transform.anchorMin = preset_delete_rect_transform.anchorMin;
+        	//preset_rename_rect_transform.anchorMax = preset_delete_rect_transform.anchorMax;
+        	//preset_rename_rect_transform.pivot = preset_delete_rect_transform.pivot;
+        	//preset_rename_rect_transform.anchoredPosition = preset_delete_rect_transform.anchoredPosition;
+        	//preset_rename_rect_transform.sizeDelta = preset_delete_rect_transform.sizeDelta;
+        	//preset_rename_rect_transform.offsetMin = preset_delete_rect_transform.offsetMin;
+        	//preset_rename_rect_transform.offsetMax = preset_delete_rect_transform.offsetMax;
+        	//preset_rename_rect_transform.localScale = Vector3.one;
+        	//preset_rename_rect_transform.localRotation = Quaternion.identity;
+			//LayoutElement preset_rename_layout_element = preset_rename_container.AddComponent<LayoutElement>();
+			//LayoutElement preset_delete_layout_element = preset_delete_container.GetComponent<LayoutElement>();
+			//preset_rename_layout_element.minWidth = preset_delete_layout_element.minWidth;
+            //preset_rename_layout_element.minHeight = preset_delete_layout_element.minHeight;
+            //preset_rename_layout_element.preferredWidth = preset_delete_layout_element.preferredWidth;
+            //preset_rename_layout_element.preferredHeight = preset_delete_layout_element.preferredHeight;
+            //preset_rename_layout_element.flexibleWidth = preset_delete_layout_element.flexibleWidth;
+            //preset_rename_layout_element.flexibleHeight = preset_delete_layout_element.flexibleHeight;
+            //preset_rename_layout_element.layoutPriority = preset_delete_layout_element.layoutPriority;
+			//RectTransform preset_rename_input_field_icon_rect_transform = preset_rename_input_field.transform.Find("Icon").GetComponent<RectTransform>();
+			//preset_rename_input_field_icon_rect_transform.anchorMin = new Vector2(1f, 0.5f);
+            //preset_rename_input_field_icon_rect_transform.anchorMax = new Vector2(1f, 0.5f);
+            //preset_rename_input_field_icon_rect_transform.pivot = new Vector2(1f, 0.5f);
+            //preset_rename_input_field_icon_rect_transform.anchoredPosition = new Vector2(-8f, 0f);
+            //preset_rename_input_field_icon_rect_transform.sizeDelta = new Vector2(36f, 36f); // maybe this instead: preset_rename_rect_transform.sizeDelta * 0.75f;
+
 			// Clone and setup the bottom row
 			presets_bottom_row_container = GameObject.Instantiate(source_time_rules_bottom_row_container_transform.gameObject, content_transform);
 			presets_bottom_row_container.transform.SetSiblingIndex(2);
@@ -250,7 +282,7 @@ namespace CustomRulesPresets.UI {
 			}
 
 			if (presets_dropdown.options.Count < 3) {
-				if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "Preset delete button click detected, but no preset to switch to after deleting exists. Create another preset first.");}
+				if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "Preset delete button click detected, but no preset to switch to, after deleting, exists. Create another preset first.");}
 				return;
 			}
 
@@ -267,26 +299,25 @@ namespace CustomRulesPresets.UI {
 			}
 
 			presets_dropdown.options.RemoveAt(current_selected_preset_index);
-			current_selected_preset_index = new_preset_index;
-			presets_dropdown.SetValueWithoutNotify(current_selected_preset_index);
-			preset_rename_input_field.SetTextWithoutNotify(presets_dropdown.options[current_selected_preset_index].text);
+			update_values(new_preset_index);
 		}
 		
 		private void handle_preset_renaming(string new_preset_name) {
 			if (string.IsNullOrEmpty(new_preset_name)) {
-				Utilities.log_verbose(Utilities.LogType.Error, "Provided preset name is null or empty.");
+				Utilities.log_verbose(Utilities.LogType.Error, "Provided new preset name is null or empty.");
 				return;
 			}
 
+			new_preset_name = new_preset_name.Trim();
 			Error preset_rename_error = custom_rules_presets_manager.custom_rules_presets_data.preset_rename(presets_dropdown.options[current_selected_preset_index].text, new_preset_name);
 			if (preset_rename_error != Error.Success) {
 				Utilities.log_verbose(Utilities.LogType.Error, $"Unable to rename preset '{presets_dropdown.options[current_selected_preset_index].text}' to '{new_preset_name}'.");
-				preset_rename_input_field.SetTextWithoutNotify(presets_dropdown.options[current_selected_preset_index].text);
+				update_values(current_selected_preset_index);
 				return;
 
 			} else {
 				presets_dropdown.options[current_selected_preset_index].text = new_preset_name;
-				presets_dropdown.RefreshShownValue();
+				update_values(current_selected_preset_index);
 			}
 		}
 
@@ -306,8 +337,7 @@ namespace CustomRulesPresets.UI {
 			Error save_error = custom_rules_presets_manager.preset_save_settings(current_selected_preset_name);
 			if (save_error != Error.Success) {
 				Utilities.log_verbose(Utilities.LogType.Error, $"Failed to save the current preset {current_selected_preset_name} before switching. Restoring previous dropdown selection...");
-				presets_dropdown.SetValueWithoutNotify(current_selected_preset_index);
-				presets_dropdown.RefreshShownValue();
+				update_values(current_selected_preset_index);
 				presets_is_updating = false;
 				return;
 			}
@@ -315,14 +345,20 @@ namespace CustomRulesPresets.UI {
 			if (new_preset_name == NEW_PRESET_OPTION_TEXT) {
 				if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "New Preset option selected, creating new preset...");}
 
-				new_preset_name = $"Preset {custom_rules_presets_manager.custom_rules_presets_data.get_preset_count() + 1}";
+				List<string> preset_names = custom_rules_presets_manager.custom_rules_presets_data.get_preset_names();
+				int new_preset_appended_number = preset_names.Count + 1;
+				new_preset_name = $"Preset {new_preset_appended_number}";
+				while (preset_names.Contains(new_preset_name)) {
+					new_preset_appended_number++;
+					new_preset_name = $"Preset {new_preset_appended_number}";
+				}
 				new_preset_index = presets_dropdown.options.Count - 1;
 
 				Error preset_duplicate_error = custom_rules_presets_manager.custom_rules_presets_data.preset_duplicate(current_selected_preset_name, new_preset_name);
 				if (preset_duplicate_error != Error.Success) {
 					Utilities.log_verbose(Utilities.LogType.Error, $"Failed to duplicate preset '{current_selected_preset_name}' with error: {preset_duplicate_error.ToString()}");
-					presets_dropdown.SetValueWithoutNotify(current_selected_preset_index);
-					presets_dropdown.RefreshShownValue();
+					update_values(current_selected_preset_index);
+
 				} else {
 					insert_new_dropdown_option(new_preset_name, new_preset_index);
 				}
@@ -333,8 +369,7 @@ namespace CustomRulesPresets.UI {
 
 			if (!custom_rules_presets_manager.custom_rules_presets_data.has_preset(new_preset_name)) {
 				Utilities.log_verbose(Utilities.LogType.Error, $"Selected preset '{new_preset_name}' not found in presets data.");
-				presets_dropdown.SetValueWithoutNotify(current_selected_preset_index);
-				presets_dropdown.RefreshShownValue();
+				update_values(current_selected_preset_index);
 				presets_is_updating = false;
 				return;
 			}
@@ -342,16 +377,14 @@ namespace CustomRulesPresets.UI {
 			Error load_error = custom_rules_presets_manager.preset_load_settings(new_preset_name);
 			if (load_error != Error.Success) {
 				Utilities.log_verbose(Utilities.LogType.Error, $"Failed to load preset {new_preset_name}. Restoring previous dropdown selection...");
-				presets_dropdown.SetValueWithoutNotify(current_selected_preset_index);
-				presets_dropdown.RefreshShownValue();
+				update_values(current_selected_preset_index);
 				presets_is_updating = false;
 				return;
 			}
 
 			Error save_presets_to_config_error = custom_rules_presets_manager.save_presets_to_file();
 
-			current_selected_preset_index = new_preset_index;
-			preset_rename_input_field.SetTextWithoutNotify(presets_dropdown.options[current_selected_preset_index].text);
+			update_values(new_preset_index);
 			presets_is_updating = false;
 		}
 
@@ -364,8 +397,7 @@ namespace CustomRulesPresets.UI {
 			int actual_option_index = option_index == -1 ? presets_dropdown.options.Count - 1 : option_index;
 			presets_dropdown.options.Insert(actual_option_index, new TMP_Dropdown.OptionData(option_text));
 			if (set_value) {
-				presets_dropdown.SetValueWithoutNotify(actual_option_index);
-				presets_dropdown.RefreshShownValue();
+				update_values(actual_option_index);
 			}
 			return Error.Success;
 		}
@@ -394,7 +426,8 @@ namespace CustomRulesPresets.UI {
 			}
 		}
 
-		public void update_shown_values() {
+		public void update_values(int new_index) {
+			current_selected_preset_index = new_index;
 			presets_dropdown.SetValueWithoutNotify(current_selected_preset_index);
 			presets_dropdown.RefreshShownValue();
 			preset_rename_input_field.SetTextWithoutNotify(presets_dropdown.options[current_selected_preset_index].text);

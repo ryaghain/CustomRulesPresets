@@ -1,17 +1,9 @@
 ﻿using BepInEx;
-using BepInEx.Bootstrap;
 using BepInEx.Logging;
 using HarmonyLib;
 using CustomRulesPresets.UI;
 using CustomRulesPresets.Core;
 using System.Reflection;
-using UnityEngine;
-
-/* 
-TODO:
-- fix the new dropdown stretching
-- fix the new dropdown outline
-*/
 
 namespace CustomRulesPresets {
     public enum Error {
@@ -73,17 +65,6 @@ namespace CustomRulesPresets {
             CustomRulesPresetsPlugin.ui_manager = new UIManager(__instance);
             if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"UIManager exited setup with error: {CustomRulesPresetsPlugin.ui_manager.construction_error.ToString()}");}
 		}
-
-        //[HarmonyPostfix]
-		//[HarmonyPatch(typeof(GameObject), nameof(MatchSetupMenu.menu.SetActive))]
-        //public static void on_match_setup_menu_ui_set_active(GameObject __instance) {
-        //    if (__instance.activeSelf) {
-        //        if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, "MatchSetupMenu.OnMenuExit postfix hook called, saving presets...");};
-        //        custom_rules_presets_manager.preset_save_settings();
-        //        Error config_save_error = custom_rules_presets_manager.save_presets_to_file();
-        //        if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"Finished saving presets with error: {config_save_error.ToString()}");}
-        //    }
-        //}
 
         [HarmonyPostfix]
 		[HarmonyPatch(typeof(MatchSetupMenu), nameof(MatchSetupMenu.OnDestroy))]

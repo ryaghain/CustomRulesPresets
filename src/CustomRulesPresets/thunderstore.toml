@@ -1,8 +1,8 @@
 [config]
-schemaVersion = "0.0.1"
+schemaVersion = "1.0.0"
 
 [general]
-repository = "https://thunderstore.io"
+repository = "https://github.com/ryaghain/CustomRulesPresets"
 
 [package]
 namespace = "ryaghain"
