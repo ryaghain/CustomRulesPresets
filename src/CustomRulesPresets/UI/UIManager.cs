@@ -292,13 +292,14 @@ namespace CustomRulesPresets.UI {
 			}
 
 			int new_preset_index = current_selected_preset_index > 0 ? current_selected_preset_index - 1 : current_selected_preset_index + 1;
-			Error delete_preset_error = custom_rules_presets_manager.custom_rules_presets_data.preset_delete(presets_dropdown.options[current_selected_preset_index].text, presets_dropdown.options[new_preset_index].text);
+			Error delete_preset_error = custom_rules_presets_manager.custom_rules_presets_data.preset_delete(presets_dropdown.options[current_selected_preset_index].text);
 			if (delete_preset_error != Error.Success) {
 				Utilities.log_verbose(Utilities.LogType.Error, $"Unable to delete preset at dropdown index '{current_selected_preset_index}'.");
-				return;
+				return;	
 			}
 
 			presets_dropdown.options.RemoveAt(current_selected_preset_index);
+			custom_rules_presets_manager.preset_load_settings(presets_dropdown.options[new_preset_index].text);
 			update_values(new_preset_index);
 		}
 		
@@ -308,10 +309,11 @@ namespace CustomRulesPresets.UI {
 				return;
 			}
 
+			string old_preset_name = presets_dropdown.options[current_selected_preset_index].text;
 			new_preset_name = new_preset_name.Trim();
-			Error preset_rename_error = custom_rules_presets_manager.custom_rules_presets_data.preset_rename(presets_dropdown.options[current_selected_preset_index].text, new_preset_name);
+			Error preset_rename_error = custom_rules_presets_manager.custom_rules_presets_data.preset_rename(old_preset_name, new_preset_name);
 			if (preset_rename_error != Error.Success) {
-				Utilities.log_verbose(Utilities.LogType.Error, $"Unable to rename preset '{presets_dropdown.options[current_selected_preset_index].text}' to '{new_preset_name}'.");
+				Utilities.log_verbose(Utilities.LogType.Error, $"Unable to rename preset '{old_preset_name}' to '{new_preset_name}'.");
 				update_values(current_selected_preset_index);
 				return;
 
@@ -361,6 +363,7 @@ namespace CustomRulesPresets.UI {
 
 				} else {
 					insert_new_dropdown_option(new_preset_name, new_preset_index);
+					if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"Preset '{current_selected_preset_name}' duplicated to '{new_preset_name}'.");}
 				}
 
 				presets_is_updating = false;
@@ -382,7 +385,8 @@ namespace CustomRulesPresets.UI {
 				return;
 			}
 
-			Error save_presets_to_config_error = custom_rules_presets_manager.save_presets_to_file();
+			Error save_presets_to_file_error = custom_rules_presets_manager.save_presets_to_file();
+			if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"Save presets to file error: {save_presets_to_file_error}");}
 
 			update_values(new_preset_index);
 			presets_is_updating = false;
@@ -449,8 +453,10 @@ namespace CustomRulesPresets.UI {
 				listener.OnActiveChanged += isActive => {
 					if (!isActive) {
 						if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"{instance_match_setup_menu_ui.name} was closed, saving currently selected preset...");}
-						Error preset_save_error = custom_rules_presets_manager.preset_save_settings();
+						Error preset_save_error = custom_rules_presets_manager.preset_save_settings(presets_dropdown.options[current_selected_preset_index].text);
+						Error save_presets_to_file_error = custom_rules_presets_manager.save_presets_to_file();
 						if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"Preset save on menu close error: {preset_save_error}");}
+						if (Utilities.do_log_debug) {Utilities.log_verbose(Utilities.LogType.Debug, $"Save presets to file error: {save_presets_to_file_error}");}
 					}
 				};
 				
@@ -463,6 +469,15 @@ namespace CustomRulesPresets.UI {
 				if (instance_match_setup_menu.isServer) {
 					Error cloning_error = clone_and_insert_ui_elements();
 					
+					if (custom_rules_presets_manager.custom_rules_presets_data.get_preset_count() == 0){
+						Error preset_create_error = custom_rules_presets_manager.custom_rules_presets_data.preset_create("Preset 1");
+						if (preset_create_error != Error.Success) {
+							Utilities.log_verbose(Utilities.LogType.Error, $"Failed to create default preset 'Preset 1' with error: {preset_create_error.ToString()}");
+							return;
+						}
+						custom_rules_presets_manager.preset_save_settings();
+					}
+
 					foreach (string preset_name in custom_rules_presets_manager.custom_rules_presets_data.get_preset_names()) {
 						Error insert_option_error = insert_new_dropdown_option(preset_name, -1, false);
 						if (insert_option_error != Error.Success) {
